@@ -78,7 +78,7 @@ export function SesionDetalle({ inicial, qrUrl }: SesionDetalleProps) {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8">
       <Link
-        href="/panel/sesiones"
+        href="/panel"
         className="inline-flex items-center gap-2 text-sm font-medium text-ciruela-700 underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-guinda-500 focus-visible:ring-offset-2 focus-visible:ring-offset-humo-100 rounded-[calc(var(--radius-brand)-0.25rem)]"
       >
         <ArrowLeft aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />

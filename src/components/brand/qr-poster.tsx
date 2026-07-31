@@ -59,6 +59,16 @@ export function QrPoster({ sesion, url }: QrPosterProps) {
     return () => document.removeEventListener("fullscreenchange", alCambiarFullscreen);
   }, []);
 
+  // Dirección legible para quien no pueda escanear el QR: el host de la
+  // URL de firma (derivada de APP_URL), donde se ingresa el código corto.
+  const direccionLegible = useMemo(() => {
+    try {
+      return new URL(url).host;
+    } catch {
+      return null;
+    }
+  }, [url]);
+
   const fechaLegible = useMemo(() => {
     const fecha = new Date(sesion.fechaAudiencia);
     if (Number.isNaN(fecha.getTime())) return sesion.fechaAudiencia;
@@ -115,7 +125,9 @@ export function QrPoster({ sesion, url }: QrPosterProps) {
         <div
           ref={posterRef}
           className={cn(
-            "mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-[var(--radius-brand)] bg-white shadow-card",
+            // `poster-imprimible`: al imprimir, globals.css oculta el resto
+            // de la interfaz y deja únicamente este nodo (cartel limpio).
+            "poster-imprimible mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-[var(--radius-brand)] bg-white shadow-card",
             proyectando && "max-w-xl shadow-none"
           )}
         >
@@ -185,7 +197,12 @@ export function QrPoster({ sesion, url }: QrPosterProps) {
               Escanee el código para firmar el acta
             </p>
             <p className="mt-1 text-center text-sm text-ciruela-500">
-              o ingrese el código en la página principal
+              o ingrese el código en{" "}
+              {direccionLegible ? (
+                <span className="font-semibold text-ciruela-700">{direccionLegible}</span>
+              ) : (
+                "la página principal"
+              )}
             </p>
           </div>
 

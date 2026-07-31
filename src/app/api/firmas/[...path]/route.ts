@@ -34,6 +34,7 @@ export async function GET(
     status: 200,
     headers: {
       "Content-Type": "image/png",
+      "X-Content-Type-Options": "nosniff",
       "Cache-Control": "private, no-store",
       "Content-Length": String(imagen.byteLength),
     },

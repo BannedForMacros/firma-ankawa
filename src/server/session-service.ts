@@ -131,7 +131,13 @@ export async function cerrarSesion(
   actor: { id: string; ip: string; userAgent: string },
 ): Promise<void> {
   await db.$transaction(async (tx) => {
-    const sesion = await tx.signingSession.findUnique({ where: { id } });
+    // SELECT ... FOR UPDATE: serializa el cierre frente a guardarFirma()
+    // (que toma el mismo lock), evitando que se persista una firma
+    // concurrente con signedAt posterior a closedAt.
+    const filas = await tx.$queryRaw<Array<{ id: string; status: string }>>`
+      SELECT id, status FROM signing_sessions WHERE id = ${id} FOR UPDATE
+    `;
+    const sesion = filas[0];
     if (!sesion) throw new ReglaDeNegocioError("La sesión no existe.", 404);
     if (sesion.status === "CLOSED") {
       throw new ReglaDeNegocioError("La sesión de firmas ya fue cerrada.");

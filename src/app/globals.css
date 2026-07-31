@@ -93,6 +93,30 @@ body {
   body {
     background: #ffffff;
   }
+
+  /* Impresión del cartel QR: si la página contiene un póster
+     (.poster-imprimible), se oculta el resto de la interfaz del panel
+     (cabecera, datos de la sesión, firmas en vivo) y se imprime solo
+     el cartel, centrado y con sus colores de marca. */
+  body:has(.poster-imprimible) * {
+    visibility: hidden;
+  }
+  body:has(.poster-imprimible) .poster-imprimible,
+  body:has(.poster-imprimible) .poster-imprimible * {
+    visibility: visible;
+  }
+  body:has(.poster-imprimible) .poster-imprimible {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 28rem;
+    margin: 0;
+    box-shadow: none;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

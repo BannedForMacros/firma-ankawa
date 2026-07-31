@@ -1,11 +1,52 @@
 import { randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
+import { PNG } from "pngjs";
 import { db } from "@/lib/db";
 import { sha256Hex } from "@/lib/crypto";
 import { guardarImagenFirma } from "@/lib/storage";
 import { registrarAuditoria } from "@/lib/audit";
 import { ReglaDeNegocioError } from "@/server/session-service";
 import type { GuardarFirmaInput } from "@/lib/validation";
+
+const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const MAX_DIMENSION_PX = 4000;
+
+/**
+ * Verifica que los bytes recibidos sean un PNG real y decodificable.
+ * El schema Zod solo valida el prefijo del data URL y el alfabeto base64;
+ * sin esta comprobación, bytes arbitrarios se persistirían como firma y
+ * romperían la generación de la planilla PDF de TODA la sesión.
+ */
+function validarPng(buffer: Buffer): void {
+  const invalida = new ReglaDeNegocioError(
+    "La imagen de la firma no es un PNG válido. Dibuje o cargue nuevamente su firma.",
+    400,
+  );
+
+  // Magic bytes + primer chunk IHDR con dimensiones razonables
+  // (se comprueban ANTES de decodificar para evitar bombas de descompresión).
+  if (buffer.length < 24 || !buffer.subarray(0, 8).equals(PNG_MAGIC)) {
+    throw invalida;
+  }
+  if (buffer.toString("latin1", 12, 16) !== "IHDR") {
+    throw invalida;
+  }
+  const width = buffer.readUInt32BE(16);
+  const height = buffer.readUInt32BE(20);
+  if (width < 1 || height < 1 || width > MAX_DIMENSION_PX || height > MAX_DIMENSION_PX) {
+    throw new ReglaDeNegocioError(
+      "Las dimensiones de la imagen de la firma no son válidas.",
+      400,
+    );
+  }
+
+  // Decodificación completa: garantiza que @react-pdf podrá renderizarla.
+  try {
+    PNG.sync.read(buffer);
+  } catch {
+    throw invalida;
+  }
+}
 
 export interface EvidenciaFirma {
   ip: string;
@@ -34,14 +75,20 @@ export async function guardarFirma(
 ): Promise<FirmaGuardada> {
   const base64 = input.imageDataUrl.replace(/^data:image\/png;base64,/, "");
   const imageBuffer = Buffer.from(base64, "base64");
+  validarPng(imageBuffer);
   const sha256 = sha256Hex(imageBuffer);
   const fileId = randomUUID();
 
   const signer = await db
     .$transaction(async (tx) => {
-      const sesion = await tx.signingSession.findUnique({
-        where: { token: sessionToken },
-      });
+      // SELECT ... FOR UPDATE: bloquea la fila de la sesión hasta el commit.
+      // Sin el lock, con READ COMMITTED cerrarSesion() puede confirmar CLOSED
+      // entre esta lectura y el INSERT (TOCTOU), persistiendo una firma con
+      // signedAt posterior a closedAt.
+      const filas = await tx.$queryRaw<Array<{ id: string; status: string }>>`
+        SELECT id, status FROM signing_sessions WHERE token = ${sessionToken} FOR UPDATE
+      `;
+      const sesion = filas[0];
       if (!sesion) {
         throw new ReglaDeNegocioError("La sesión de firma no existe.", 404);
       }
