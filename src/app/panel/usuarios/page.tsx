@@ -61,7 +61,7 @@ export default async function UsuariosPage() {
         <NuevoUsuarioDialog />
       </div>
 
-      <p className="max-w-2xl text-sm leading-relaxed text-ciruela-400">
+      <p className="max-w-[60ch] text-sm leading-relaxed text-ciruela-400">
         Cuentas del personal del centro con acceso al panel. Los administradores
         gestionan usuarios y sesiones; los operadores gestionan únicamente las
         sesiones de firmas.

@@ -5,6 +5,7 @@ import { obtenerSesionPublicaPorToken } from "@/server/session-service";
 import { fechaCorta } from "@/lib/dates";
 import type { ModalidadAudiencia, SesionPublicaDto } from "@/lib/types";
 import { AnkawaLogo } from "@/components/brand/logo";
+import { AlaPoligonal } from "@/components/brand/ala-poligonal";
 import { FlujoFirma } from "@/components/firmar/flujo-firma";
 import { SesionCerrada } from "@/components/firmar/sesion-cerrada";
 
@@ -39,17 +40,23 @@ export default async function FirmarPage({ params }: PageProps) {
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      {/* Cabecera compacta de marca */}
-      <header className="bg-ciruela-700 text-white">
-        <div className="mx-auto flex w-full max-w-3xl items-center gap-3 px-4 py-3">
-          <AnkawaLogo className="h-9 w-9" />
-          <div className="flex flex-col leading-tight">
-            <span className="titulo-institucional text-[0.6rem] text-ciruela-100">
-              Centro de Arbitraje y Resolución de Disputas
-            </span>
-            <span className="titulo-institucional text-sm">CARD – ANKAWA INTL</span>
+      {/* Cabecera compacta de marca: superficie blanca, logo a todo color,
+          ala poligonal de 2px como firma visual del sistema */}
+      <header className="bg-white">
+        <div className="border-b border-humo-200">
+          <div className="mx-auto flex w-full max-w-3xl items-center gap-3 px-4 py-3">
+            <AnkawaLogo className="h-9 w-9" />
+            <div className="flex flex-col leading-tight">
+              <span className="titulo-institucional text-[0.6rem] tracking-[0.18em] text-ciruela-400">
+                Centro de Arbitraje y Resolución de Disputas
+              </span>
+              <span className="titulo-institucional text-sm tracking-[0.22em] text-ciruela-700">
+                CARD – ANKAWA INTL
+              </span>
+            </div>
           </div>
         </div>
+        <AlaPoligonal className="h-0.5" />
       </header>
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:py-8">
@@ -58,26 +65,25 @@ export default async function FirmarPage({ params }: PageProps) {
           aria-label="Datos de la audiencia"
           className="rounded-[var(--radius-brand)] bg-white p-5 shadow-card"
         >
-          <span className="barra-guinda mb-3" aria-hidden="true" />
-          <p className="titulo-institucional text-[0.65rem] text-ciruela-400">
+          <p className="titulo-institucional text-[0.65rem] text-guinda-600">
             Acta de audiencia — Sesión {sesion.code}
           </p>
-          <h1 className="mt-1.5 text-lg font-semibold leading-snug text-ciruela-700">
+          <h1 className="mt-1.5 text-balance font-[family-name:var(--font-display)] text-xl font-bold leading-snug tracking-tight text-ciruela-700">
             {sesion.asunto}
           </h1>
           <dl className="mt-3 grid gap-x-6 gap-y-1.5 text-sm text-berenjena sm:grid-cols-2">
             <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 shrink-0 text-guinda-500" strokeWidth={1.5} aria-hidden="true" />
+              <FileText className="h-4 w-4 shrink-0 text-ciruela-300" strokeWidth={1.5} aria-hidden="true" />
               <dt className="font-medium text-ciruela-700">Expediente:</dt>
               <dd>{sesion.expediente}</dd>
             </div>
             <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 shrink-0 text-guinda-500" strokeWidth={1.5} aria-hidden="true" />
+              <CalendarDays className="h-4 w-4 shrink-0 text-ciruela-300" strokeWidth={1.5} aria-hidden="true" />
               <dt className="font-medium text-ciruela-700">Fecha:</dt>
               <dd>{fechaCorta(new Date(sesion.fechaAudiencia))}</dd>
             </div>
             <div className="flex items-center gap-2 sm:col-span-2">
-              <MapPin className="h-4 w-4 shrink-0 text-guinda-500" strokeWidth={1.5} aria-hidden="true" />
+              <MapPin className="h-4 w-4 shrink-0 text-ciruela-300" strokeWidth={1.5} aria-hidden="true" />
               <dt className="font-medium text-ciruela-700">Sede:</dt>
               <dd>
                 {sesion.sede} · {MODALIDAD_LEGIBLE[sesion.modalidad]}

@@ -14,10 +14,12 @@ const MODALIDAD_LABEL: Record<ModalidadAudiencia, string> = {
 interface SesionCardProps {
   sesion: SesionResumenDto;
   className?: string;
+  /** Presentación reducida y apagada (sesiones cerradas). */
+  compacta?: boolean;
 }
 
 /** Tarjeta resumen de una sesión de firmas; toda la tarjeta enlaza al detalle. */
-export function SesionCard({ sesion, className }: SesionCardProps) {
+export function SesionCard({ sesion, className, compacta = false }: SesionCardProps) {
   const ModalidadIcon = sesion.modalidad === "VIRTUAL" ? Video : Users;
 
   return (
@@ -25,22 +27,42 @@ export function SesionCard({ sesion, className }: SesionCardProps) {
       href={`/panel/sesion/${sesion.id}`}
       aria-label={`Ver sesión ${sesion.code}: ${sesion.asunto}`}
       className={cn(
-        "group flex h-full flex-col gap-3 rounded-[var(--radius-brand)] bg-white p-5 shadow-card transition-shadow duration-150 outline-none hover:shadow-card-hover focus-visible:ring-2 focus-visible:ring-guinda-500 focus-visible:ring-offset-2 focus-visible:ring-offset-humo-100",
+        "group flex h-full flex-col rounded-[var(--radius-brand)] bg-white outline-none transition-[box-shadow,transform] duration-200 ease-out hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-guinda-500 focus-visible:ring-offset-2 focus-visible:ring-offset-humo-50",
+        compacta
+          ? "gap-2 border border-humo-200 p-4 hover:shadow-card"
+          : "gap-3 p-5 shadow-card hover:shadow-card-hover",
         className
       )}
     >
       <div className="flex items-start justify-between gap-3">
-        <span className="font-mono text-xs tracking-wide text-ciruela-400">
+        <span
+          className={cn(
+            "text-xs font-medium tracking-wide tabular-nums",
+            compacta ? "text-ciruela-300" : "text-ciruela-400"
+          )}
+        >
           {sesion.expediente}
         </span>
         <SessionStatusPill status={sesion.status} />
       </div>
 
-      <p className="line-clamp-2 text-sm font-semibold leading-snug text-berenjena group-hover:text-ciruela-700">
+      <p
+        className={cn(
+          "line-clamp-2 text-sm leading-snug group-hover:text-ciruela-700",
+          compacta
+            ? "font-medium text-ciruela-500"
+            : "font-semibold text-berenjena"
+        )}
+      >
         {sesion.asunto}
       </p>
 
-      <dl className="mt-auto space-y-1.5 text-xs text-ciruela-400">
+      <dl
+        className={cn(
+          "mt-auto text-xs",
+          compacta ? "space-y-1 text-ciruela-300" : "space-y-1.5 text-ciruela-400"
+        )}
+      >
         <div className="flex items-center gap-2">
           <CalendarDays className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" />
           <dt className="sr-only">Fecha de la audiencia</dt>
@@ -58,9 +80,23 @@ export function SesionCard({ sesion, className }: SesionCardProps) {
         </div>
       </dl>
 
-      <div className="flex items-center gap-2 border-t border-humo-200 pt-3 text-xs font-medium text-ciruela-700">
-        <PenLine className="h-3.5 w-3.5 text-guinda-500" strokeWidth={1.5} aria-hidden="true" />
-        {sesion.totalFirmas === 1 ? "1 firma" : `${sesion.totalFirmas} firmas`}
+      <div
+        className={cn(
+          "flex items-center gap-2 border-t border-humo-200 text-xs font-medium",
+          compacta ? "pt-2.5 text-ciruela-400" : "pt-3 text-ciruela-700"
+        )}
+      >
+        <PenLine
+          className={cn(
+            "h-3.5 w-3.5",
+            compacta ? "text-ciruela-300" : "text-guinda-500"
+          )}
+          strokeWidth={1.5}
+          aria-hidden="true"
+        />
+        <span className="tabular-nums">
+          {sesion.totalFirmas === 1 ? "1 firma" : `${sesion.totalFirmas} firmas`}
+        </span>
       </div>
     </Link>
   );

@@ -27,10 +27,10 @@ export function SignoutButton() {
       onClick={() => {
         void handleSignout();
       }}
-      className="text-ciruela-100 hover:bg-ciruela-600 hover:text-white active:bg-ciruela-500 focus-visible:ring-guinda-300 focus-visible:ring-offset-ciruela-700"
+      className="text-ciruela-500 hover:bg-humo-100 hover:text-ciruela-700 active:bg-humo-200 focus-visible:ring-guinda-500 focus-visible:ring-offset-white"
     >
       {saliendo ? (
-        <Spinner className="h-4 w-4 text-white" />
+        <Spinner className="h-4 w-4 text-ciruela-500" />
       ) : (
         <LogOut className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
       )}

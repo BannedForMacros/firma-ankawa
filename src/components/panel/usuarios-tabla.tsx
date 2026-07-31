@@ -45,34 +45,34 @@ export function UsuariosTabla({ usuarios }: UsuariosTablaProps) {
           Listado de usuarios internos del sistema de firmas
         </caption>
         <thead>
-          <tr className="bg-humo-200">
+          <tr className="bg-humo-100">
             <th
               scope="col"
-              className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-ciruela-700"
+              className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-ciruela-500"
             >
               Nombre
             </th>
             <th
               scope="col"
-              className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-ciruela-700"
+              className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-ciruela-500"
             >
               Correo electrónico
             </th>
             <th
               scope="col"
-              className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-ciruela-700"
+              className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-ciruela-500"
             >
               Rol
             </th>
             <th
               scope="col"
-              className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-ciruela-700"
+              className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-ciruela-500"
             >
               Estado
             </th>
             <th
               scope="col"
-              className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-ciruela-700"
+              className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-ciruela-500"
             >
               Fecha de creación
             </th>
@@ -82,7 +82,7 @@ export function UsuariosTabla({ usuarios }: UsuariosTablaProps) {
           {usuarios.map((usuario) => (
             <tr
               key={usuario.id}
-              className="border-b border-humo-200 last:border-b-0"
+              className="border-b border-humo-200 transition-colors duration-150 last:border-b-0 hover:bg-humo-50"
             >
               <td className="px-4 py-3 font-medium text-berenjena">
                 {usuario.nombre}
@@ -98,7 +98,7 @@ export function UsuariosTabla({ usuarios }: UsuariosTablaProps) {
                   {usuario.activo ? "Activo" : "Inactivo"}
                 </Badge>
               </td>
-              <td className="px-4 py-3 text-ciruela-400">
+              <td className="px-4 py-3 text-ciruela-400 tabular-nums">
                 {formatearFecha(usuario.createdAt)}
               </td>
             </tr>

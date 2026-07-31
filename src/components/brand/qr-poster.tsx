@@ -5,6 +5,7 @@ import Image from "next/image";
 import QRCode from "qrcode";
 import { toPng } from "html-to-image";
 import { Download, MonitorUp, Printer } from "lucide-react";
+import { AlaPoligonal } from "@/components/brand/ala-poligonal";
 import { cn } from "@/lib/utils";
 
 interface QrPosterProps {
@@ -19,7 +20,7 @@ interface QrPosterProps {
 }
 
 const claseBotonBase =
-  "inline-flex items-center justify-center gap-2 rounded-[var(--radius-brand)] px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ciruela-600 disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex items-center justify-center gap-2 rounded-[var(--radius-brand)] px-4 py-2.5 text-sm font-semibold transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-guinda-500 focus-visible:ring-offset-2 focus-visible:ring-offset-humo-100 disabled:cursor-not-allowed disabled:opacity-60";
 
 export function QrPoster({ sesion, url }: QrPosterProps) {
   const escenarioRef = useRef<HTMLDivElement>(null);
@@ -113,12 +114,13 @@ export function QrPoster({ sesion, url }: QrPosterProps) {
 
   return (
     <section aria-label={`Cartel de firma de la sesión ${sesion.code}`}>
-      {/* Escenario de proyección: en pantalla completa centra el póster sobre fondo ciruela */}
+      {/* Escenario de proyección: en pantalla completa centra el póster
+          blanco sobre fondo humo claro (nunca fondo oscuro). */}
       <div
         ref={escenarioRef}
         className={cn(
           proyectando &&
-            "flex h-full w-full items-center justify-center overflow-auto bg-ciruela-800 p-8"
+            "flex h-full w-full items-center justify-center overflow-auto bg-humo-100 p-8"
         )}
       >
         {/* Nodo exportable del póster */}
@@ -128,32 +130,36 @@ export function QrPoster({ sesion, url }: QrPosterProps) {
             // `poster-imprimible`: al imprimir, globals.css oculta el resto
             // de la interfaz y deja únicamente este nodo (cartel limpio).
             "poster-imprimible mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-[var(--radius-brand)] bg-white shadow-card",
-            proyectando && "max-w-xl shadow-none"
+            proyectando &&
+              "max-w-xl shadow-[0_2px_6px_rgb(30_18_32_/_0.06),0_32px_80px_-16px_rgb(30_18_32_/_0.25)]"
           )}
         >
-          {/* Cabecera institucional */}
-          <header className="flex items-center gap-4 bg-ciruela-700 px-6 py-5">
+          {/* Cabecera institucional: logo a todo color sobre blanco */}
+          <header className="flex flex-col items-center gap-4 px-8 pb-6 pt-8 text-center">
             <Image
               src="/brand/logo.png"
               alt="Ankawa Internacional"
-              width={52}
-              height={52}
-              className="h-13 w-13 shrink-0 object-contain"
+              width={72}
+              height={72}
+              className="h-18 w-18 shrink-0 object-contain"
             />
             <div>
-              <p className="titulo-institucional text-[0.62rem] leading-relaxed text-white/85">
+              <p className="titulo-institucional text-[0.6rem] leading-relaxed text-ciruela-400">
                 Centro de Arbitraje y Resolución de Disputas
               </p>
-              <p className="titulo-institucional text-base leading-tight text-white">
+              <p className="titulo-institucional mt-1 text-sm leading-tight text-ciruela-700">
                 CARD – ANKAWA INTL
               </p>
             </div>
           </header>
 
+          {/* Firma visual del sistema como separador */}
+          <AlaPoligonal className="h-2" />
+
           {/* Asunto y expediente */}
           <div className="border-b border-humo-200 px-8 pb-5 pt-6 text-center">
             <p className="text-base font-semibold leading-snug text-berenjena">{sesion.asunto}</p>
-            <p className="titulo-institucional mt-2 text-xs text-ciruela-700">
+            <p className="titulo-institucional mt-2 text-[11px] text-guinda-600">
               Expediente {sesion.expediente}
             </p>
           </div>
@@ -206,10 +212,13 @@ export function QrPoster({ sesion, url }: QrPosterProps) {
             </p>
           </div>
 
-          {/* Franja inferior */}
-          <footer className="flex items-center justify-between gap-4 bg-guinda-500 px-6 py-3 text-sm text-white">
-            <span className="font-medium">{sesion.sede}</span>
-            <span>{fechaLegible}</span>
+          {/* Pie sobrio con ala poligonal fina */}
+          <footer className="border-t border-humo-200">
+            <div className="flex items-center justify-between gap-4 px-8 py-4 text-sm">
+              <span className="font-semibold text-ciruela-700">{sesion.sede}</span>
+              <span className="text-ciruela-400">{fechaLegible}</span>
+            </div>
+            <AlaPoligonal className="h-1" />
           </footer>
         </div>
 
@@ -226,7 +235,10 @@ export function QrPoster({ sesion, url }: QrPosterProps) {
           type="button"
           onClick={() => void descargarPng()}
           disabled={descargando || !qrDataUrl}
-          className={cn(claseBotonBase, "bg-guinda-500 text-white hover:bg-guinda-600")}
+          className={cn(
+            claseBotonBase,
+            "bg-guinda-500 text-white shadow-card hover:bg-guinda-600 active:scale-[0.99] active:bg-guinda-700"
+          )}
         >
           <Download aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />
           {descargando ? "Generando imagen…" : "Descargar PNG"}
@@ -236,7 +248,7 @@ export function QrPoster({ sesion, url }: QrPosterProps) {
           onClick={imprimir}
           className={cn(
             claseBotonBase,
-            "border border-ciruela-600 bg-white text-ciruela-700 hover:bg-ciruela-50"
+            "border border-humo-300 bg-white text-ciruela-700 hover:border-ciruela-300 hover:bg-humo-50 active:bg-humo-100"
           )}
         >
           <Printer aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />
@@ -247,7 +259,7 @@ export function QrPoster({ sesion, url }: QrPosterProps) {
           onClick={proyectar}
           className={cn(
             claseBotonBase,
-            "border border-ciruela-600 bg-white text-ciruela-700 hover:bg-ciruela-50"
+            "border border-humo-300 bg-white text-ciruela-700 hover:border-ciruela-300 hover:bg-humo-50 active:bg-humo-100"
           )}
         >
           <MonitorUp aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />

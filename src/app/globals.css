@@ -83,6 +83,167 @@ body {
   background-color: #ffffff;
 }
 
+/* ─── Animaciones de la portada ("la firma que se forma") ──────────────────
+   La portada es deliberadamente maximalista: trazos de firma que se dibujan
+   solos, facetas del cóndor que se ensamblan y revelados orquestados.
+   prefers-reduced-motion (abajo) desactiva todo.                            */
+
+@keyframes trazo-ciclo {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--trazo-opacidad, 0.5);
+  }
+  55% {
+    stroke-dashoffset: 0;
+    opacity: var(--trazo-opacidad, 0.5);
+  }
+  82% {
+    stroke-dashoffset: 0;
+    opacity: var(--trazo-opacidad, 0.5);
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes trazo-dibujar {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes faceta-entra {
+  from {
+    opacity: 0;
+    transform: translate(var(--faceta-dx, 0px), var(--faceta-dy, 28px))
+      rotate(var(--faceta-rot, 10deg)) scale(0.5);
+  }
+  to {
+    opacity: var(--faceta-opacidad, 1);
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes logo-entra {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(16px);
+    filter: blur(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes subir-entra {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes flotar {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes marquesina {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.anim-logo-entra {
+  animation: logo-entra 1000ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--retraso, 0ms);
+}
+.anim-subir {
+  animation: subir-entra 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--retraso, 0ms);
+}
+.anim-faceta {
+  animation: faceta-entra 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--retraso, 0ms);
+}
+.anim-flotar {
+  animation: flotar 7s ease-in-out infinite;
+  animation-delay: var(--retraso, 0ms);
+}
+.anim-marquesina {
+  animation: marquesina var(--marquesina-dur, 30s) linear infinite;
+}
+
+/* Trazo de firma que se dibuja en bucle (usar con pathLength="1"). */
+.trazo-firma {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: trazo-ciclo var(--trazo-dur, 14s) ease-in-out infinite;
+  animation-delay: var(--retraso, 0ms);
+}
+
+/* Trazo que se dibuja una sola vez cuando su contenedor .revelar se revela. */
+.trazo-revelar {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.revelado .trazo-revelar {
+  animation: trazo-dibujar 1500ms 250ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Revelado al scroll (activado por IntersectionObserver). */
+.revelar {
+  opacity: 0;
+  transform: translateY(26px);
+  transition:
+    opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--retraso, 0ms);
+}
+.revelado {
+  opacity: 1;
+  transform: none;
+}
+
+/* Texto de contorno para la marquesina institucional. */
+.texto-contorno {
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--color-humo-300);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .revelar {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media print {
   .no-print {
     display: none !important;

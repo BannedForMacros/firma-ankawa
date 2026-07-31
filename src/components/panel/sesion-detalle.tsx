@@ -186,13 +186,27 @@ export function SesionDetalle({ inicial, qrUrl }: SesionDetalleProps) {
               {/* Acciones según estado */}
               <div className="flex flex-wrap items-center gap-3">
                 {abierta ? (
-                  <Button
-                    variant="destructive"
-                    onClick={() => setDialogoCierreAbierto(true)}
-                  >
-                    <XOctagon aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />
-                    Cerrar sesión de firmas
-                  </Button>
+                  <>
+                    {/* El personal que conduce la audiencia también firma el acta:
+                        entra al mismo flujo público del token para que exista un
+                        único camino de firma con la misma evidencia. */}
+                    <a
+                      href={qrUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={cn(buttonVariants({ variant: "primary", size: "md" }))}
+                    >
+                      <PenLine aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />
+                      Firmar esta acta
+                    </a>
+                    <Button
+                      variant="destructive"
+                      onClick={() => setDialogoCierreAbierto(true)}
+                    >
+                      <XOctagon aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />
+                      Cerrar sesión de firmas
+                    </Button>
+                  </>
                 ) : null}
                 <a
                   href={`/api/planilla/${sesion.id}`}

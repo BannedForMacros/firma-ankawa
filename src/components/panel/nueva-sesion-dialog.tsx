@@ -264,6 +264,7 @@ export function NuevaSesionDialog({ triggerVariant = "primary" }: NuevaSesionDia
             <Button
               type="button"
               variant="outline"
+              className="border-humo-300 text-ciruela-700 hover:border-ciruela-300 hover:bg-humo-50 active:bg-humo-100"
               disabled={enviando}
               onClick={() => handleOpenChange(false)}
             >

@@ -13,16 +13,19 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <main className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6">
-      <div className="flex w-full max-w-md flex-col items-center gap-8">
-        <AnkawaMarca className="text-ciruela-700" />
+    <main className="flex flex-1 items-center justify-center bg-humo-50 px-4 py-12 sm:px-6">
+      <div className="flex w-full max-w-sm flex-col items-center gap-8">
+        <AnkawaMarca />
 
         <section
           aria-labelledby="login-titulo"
           className="w-full rounded-[var(--radius-brand)] bg-white p-6 shadow-card sm:p-8"
         >
           <span className="barra-guinda" aria-hidden="true" />
-          <h1 id="login-titulo" className="titulo-institucional mt-4 text-base text-ciruela-700">
+          <h1
+            id="login-titulo"
+            className="mt-4 font-display text-2xl font-bold tracking-tight text-ciruela-700"
+          >
             Iniciar sesión
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-ciruela-400">

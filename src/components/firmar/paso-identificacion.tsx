@@ -167,9 +167,19 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
       </div>
 
       <Tabs value={docType} onValueChange={cambiarTab}>
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="DNI">Persona natural (DNI)</TabsTrigger>
-          <TabsTrigger value="RUC">Persona jurídica (RUC)</TabsTrigger>
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-0 rounded-none bg-transparent p-0">
+          <TabsTrigger
+            value="DNI"
+            className="min-h-11 rounded-none border-b-2 border-humo-200 px-3 py-2.5 data-[state=active]:border-guinda-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none focus-visible:ring-offset-white"
+          >
+            Persona natural (DNI)
+          </TabsTrigger>
+          <TabsTrigger
+            value="RUC"
+            className="min-h-11 rounded-none border-b-2 border-humo-200 px-3 py-2.5 data-[state=active]:border-guinda-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none focus-visible:ring-offset-white"
+          >
+            Persona jurídica (RUC)
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -188,9 +198,13 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
             onChange={(e) => cambiarNumero(e.target.value)}
             aria-invalid={mensajeNumero ? true : undefined}
             aria-describedby={mensajeNumero ? `${idBase}-numero-error` : undefined}
-            className="sm:max-w-56"
+            className="min-h-11 sm:max-w-56"
           />
-          <Button onClick={verificar} disabled={!numeroValido || consultando}>
+          <Button
+            onClick={verificar}
+            disabled={!numeroValido || consultando}
+            className="min-h-11"
+          >
             {consultando ? (
               <Spinner className="h-4 w-4 text-white" />
             ) : (
@@ -220,7 +234,7 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
             <Button
               variant="outline"
               size="sm"
-              className="mt-3"
+              className="mt-3 min-h-11 border-humo-300 hover:border-ciruela-300"
               onClick={() => setManual(true)}
             >
               Continuar con registro manual
@@ -230,7 +244,7 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
       ) : null}
 
       {resultado?.tipo === "DNI" ? (
-        <div className="rounded-[var(--radius-brand)] border border-emerald-200 bg-emerald-50/50 p-4">
+        <div className="rounded-[var(--radius-brand)] border border-humo-200 bg-humo-50 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-medium text-ciruela-400">Nombre completo</p>
             <VerifiedBadge verified source="RENIEC" />
@@ -241,7 +255,7 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
 
       {resultado?.tipo === "RUC" ? (
         <div className="flex flex-col gap-3">
-          <div className="rounded-[var(--radius-brand)] border border-emerald-200 bg-emerald-50/50 p-4">
+          <div className="rounded-[var(--radius-brand)] border border-humo-200 bg-humo-50 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs font-medium text-ciruela-400">Razón social</p>
               <VerifiedBadge verified source="SUNAT" />

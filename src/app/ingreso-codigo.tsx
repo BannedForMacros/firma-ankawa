@@ -27,10 +27,12 @@ export function IngresoCodigo() {
   const [error, setError] = React.useState<string | null>(null);
   const [enviando, setEnviando] = React.useState(false);
 
-  // Autofoco solo en pantallas amplias: en móvil evitamos abrir el teclado.
+  // Autofoco solo en pantallas amplias (en móvil evitamos abrir el teclado).
+  // preventScroll es imprescindible: sin él, el navegador desplaza la página
+  // hasta el input y el visitante se pierde la entrada del héroe con el logo.
   React.useEffect(() => {
     if (window.matchMedia("(min-width: 768px)").matches) {
-      inputRef.current?.focus();
+      inputRef.current?.focus({ preventScroll: true });
     }
   }, []);
 
@@ -96,7 +98,7 @@ export function IngresoCodigo() {
           placeholder="A1B2C3"
           aria-invalid={error !== null}
           aria-describedby={error ? "codigo-error" : "codigo-ayuda"}
-          className="h-16 text-center font-display text-2xl font-semibold uppercase tracking-[0.4em] placeholder:tracking-[0.4em] placeholder:text-humo-300"
+          className="h-20 text-center font-display text-3xl font-bold uppercase tracking-[0.3em] tabular-nums placeholder:tracking-[0.3em] placeholder:text-humo-300 sm:text-4xl"
         />
         <p id="codigo-ayuda" className="text-xs text-ciruela-400">
           Ingrese el código de 6 caracteres que se le proporcionó en la audiencia.

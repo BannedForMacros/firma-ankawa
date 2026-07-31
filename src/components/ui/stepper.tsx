@@ -10,7 +10,7 @@ export interface StepperProps {
 
 /**
  * Indicador de progreso por pasos (índice base 0).
- * Pasos completados en guinda; paso actual en ciruela.
+ * Paso actual en guinda sólido; completados en guinda-100 con check.
  */
 function Stepper({ steps, current }: StepperProps) {
   return (
@@ -28,25 +28,21 @@ function Stepper({ steps, current }: StepperProps) {
             className={cn(
               "relative flex flex-1 flex-col items-center gap-1.5 text-center",
               index > 0 &&
-                "before:absolute before:left-[calc(-50%+1.375rem)] before:right-[calc(50%+1.375rem)] before:top-4 before:h-px before:content-['']",
-              index > 0 &&
-                (completado || actual ? "before:bg-guinda-500" : "before:bg-humo-300")
+                "before:absolute before:left-[calc(-50%+1.375rem)] before:right-[calc(50%+1.375rem)] before:top-4 before:h-px before:bg-humo-200 before:content-['']"
             )}
           >
             <span
               className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-full border text-sm font-semibold transition-colors duration-200",
-                completado &&
-                  "border-guinda-500 bg-guinda-500 text-white",
-                actual &&
-                  "border-ciruela-600 bg-ciruela-600 text-white",
+                "flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-colors duration-200",
+                completado && "bg-guinda-100 text-guinda-600",
+                actual && "bg-guinda-500 text-white",
                 !completado &&
                   !actual &&
-                  "border-humo-300 bg-white text-ciruela-300"
+                  "border border-humo-200 bg-white text-ciruela-300"
               )}
             >
               {completado ? (
-                <Check className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+                <Check className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
               ) : (
                 index + 1
               )}
@@ -54,7 +50,7 @@ function Stepper({ steps, current }: StepperProps) {
             <span
               className={cn(
                 "px-1 text-xs font-medium leading-tight",
-                completado && "text-guinda-600",
+                completado && "text-ciruela-400",
                 actual && "text-ciruela-700",
                 !completado && !actual && "text-ciruela-300"
               )}

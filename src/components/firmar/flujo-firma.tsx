@@ -159,14 +159,14 @@ export function FlujoFirma({ sesion, token }: FlujoFirmaProps) {
           }
         `}</style>
         <span
-          className="flex h-16 w-16 items-center justify-center rounded-full bg-guinda-500 text-white"
+          className="flex h-16 w-16 items-center justify-center rounded-full bg-guinda-50 text-guinda-600"
           style={{ animation: "exito-aparecer 450ms ease-out both" }}
         >
-          <Check className="h-8 w-8" strokeWidth={1.5} aria-hidden="true" />
+          <Check className="h-8 w-8" strokeWidth={2} aria-hidden="true" />
         </span>
         <h2
           id="titulo-firma-registrada"
-          className="titulo-institucional mt-5 text-base text-ciruela-700"
+          className="mt-5 text-balance font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight text-ciruela-700"
         >
           Su firma quedó registrada
         </h2>
@@ -176,10 +176,10 @@ export function FlujoFirma({ sesion, token }: FlujoFirmaProps) {
           Firma registrada a las {exito.hora}.
         </p>
         <div className="mt-6 w-full max-w-md rounded-[var(--radius-brand)] bg-humo-100 px-4 py-3 text-left">
-          <p className="text-xs font-medium text-ciruela-400">
+          <p className="titulo-institucional text-[0.6rem] text-ciruela-400">
             Código de verificación de integridad
           </p>
-          <code className="mt-1 block break-all text-[0.7rem] leading-relaxed text-ciruela-700">
+          <code className="mt-1.5 block break-all text-[0.7rem] leading-relaxed tabular-nums text-ciruela-700">
             {exito.sha256}
           </code>
         </div>
@@ -222,7 +222,7 @@ export function FlujoFirma({ sesion, token }: FlujoFirmaProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="mt-3"
+                  className="mt-3 min-h-11 border-humo-300 hover:border-ciruela-300"
                   onClick={() => setSesionCerrada(true)}
                 >
                   Actualizar estado de la sesión
@@ -240,7 +240,10 @@ export function FlujoFirma({ sesion, token }: FlujoFirmaProps) {
           size="lg"
           onClick={retroceder}
           disabled={paso === 0 || enviando}
-          className={cn(paso === 0 && "invisible")}
+          className={cn(
+            "border-humo-300 hover:border-ciruela-300",
+            paso === 0 && "invisible",
+          )}
         >
           <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
           Atrás

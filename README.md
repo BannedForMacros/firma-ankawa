@@ -140,7 +140,10 @@ confía únicamente en la interfaz.
    impresión o descarga PNG.
 3. **Firmar** — Cada asistente escanea el QR (o ingresa el código corto en la
    landing), acredita su identidad con DNI o RUC (verificación RENIEC/SUNAT),
-   dibuja o carga su firma y acepta la declaración de conformidad.
+   dibuja o carga su firma y acepta la declaración de conformidad. El personal
+   que conduce la audiencia también puede firmar el acta con el botón
+   «Firmar esta acta» del detalle de la sesión, que lo lleva al mismo flujo
+   (único camino de firma: misma verificación de identidad y misma evidencia).
 4. **Supervisar y cerrar** — El panel muestra las firmas entrantes en vivo
    (sondeo cada 4 s). Concluida la audiencia, el personal cierra la sesión: a
    partir de ese momento no se admite ninguna firma adicional.
