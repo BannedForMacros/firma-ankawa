@@ -1,26 +1,105 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ─── Tokens de marca Ankawa Internacional ─────────────────────────────────
+   Guinda/vino: acento primario (bloques rojos de la web institucional)
+   Ciruela: titulares y navegación (color del wordmark)
+   Berenjena: texto profundo casi negro
+   Humo: fondo institucional
+   Terracota: puntas de las alas del cóndor                                  */
+@theme {
+  --color-guinda-50: #fbeaec;
+  --color-guinda-100: #f5cdd1;
+  --color-guinda-200: #e79aa1;
+  --color-guinda-300: #d6636e;
+  --color-guinda-400: #bd3a47;
+  --color-guinda-500: #a21c26;
+  --color-guinda-600: #8b1620;
+  --color-guinda-700: #72111a;
+  --color-guinda-800: #590d14;
+  --color-guinda-900: #40080e;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-ciruela-50: #f2edf3;
+  --color-ciruela-100: #ddd1df;
+  --color-ciruela-200: #b8a3bc;
+  --color-ciruela-300: #8f7295;
+  --color-ciruela-400: #644a6a;
+  --color-ciruela-500: #4a2f4e;
+  --color-ciruela-600: #3b1f3d;
+  --color-ciruela-700: #2e1a30;
+  --color-ciruela-800: #221224;
+  --color-ciruela-900: #170b18;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-berenjena: #1e1220;
+  --color-humo-50: #fafafb;
+  --color-humo-100: #f5f4f6;
+  --color-humo-200: #e9e7ec;
+  --color-humo-300: #d8d5dd;
+  --color-terracota-400: #d07a54;
+  --color-terracota-500: #c0603a;
+  --color-terracota-600: #a44e2d;
+
+  --font-display: var(--font-archivo), system-ui, sans-serif;
+  --font-body: var(--font-public-sans), system-ui, sans-serif;
+
+  --shadow-card: 0 1px 2px rgb(30 18 32 / 0.05), 0 8px 24px -8px rgb(30 18 32 / 0.1);
+  --shadow-card-hover: 0 2px 4px rgb(30 18 32 / 0.06), 0 16px 40px -12px rgb(30 18 32 / 0.16);
+
+  --radius-brand: 0.625rem;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-humo-100);
+  color: var(--color-berenjena);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Titular institucional: mayúsculas con tracking amplio, como
+   "N Ó M I N A  D E  Á R B I T R O S" en la web de Ankawa */
+.titulo-institucional {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+}
+
+/* Barra guinda de sección — gramática visual de la web institucional */
+.barra-guinda {
+  display: block;
+  width: 3.5rem;
+  height: 0.375rem;
+  background-color: var(--color-guinda-500);
+}
+
+/* Fondo ajedrezado para previsualizar PNG transparente */
+.fondo-ajedrez {
+  background-image:
+    linear-gradient(45deg, #e5e2e9 25%, transparent 25%),
+    linear-gradient(-45deg, #e5e2e9 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e5e2e9 75%),
+    linear-gradient(-45deg, transparent 75%, #e5e2e9 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-color: #ffffff;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .solo-print {
+    display: block !important;
+  }
+  body {
+    background: #ffffff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
