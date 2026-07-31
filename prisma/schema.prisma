@@ -1,0 +1,150 @@
+// Prisma schema — Sistema de Firmas de Audiencias CARD ANKAWA INTL
+// PostgreSQL 17 local — base de datos: ankawa_firmas
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  OPERADOR
+}
+
+enum SessionStatus {
+  OPEN
+  CLOSED
+}
+
+enum DocType {
+  DNI
+  RUC
+}
+
+enum SignMethod {
+  DRAWN
+  UPLOADED
+}
+
+enum Modalidad {
+  PRESENCIAL
+  VIRTUAL
+  MIXTA
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  nombre       String
+  passwordHash String
+  role         Role     @default(OPERADOR)
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sesionesCreadas  SigningSession[] @relation("SesionCreadaPor")
+  sesionesCerradas SigningSession[] @relation("SesionCerradaPor")
+  auditLogs        AuditLog[]
+
+  @@map("users")
+}
+
+model SigningSession {
+  id             String        @id @default(cuid())
+  /// Código corto legible para ingreso manual (p. ej. "K7M2PQ")
+  code           String        @unique
+  /// Token aleatorio impredecible para la URL del QR (32 bytes hex)
+  token          String        @unique
+  asunto         String
+  expediente     String
+  fechaAudiencia DateTime
+  sede           String
+  modalidad      Modalidad     @default(PRESENCIAL)
+  status         SessionStatus @default(OPEN)
+
+  createdById String
+  createdBy   User      @relation("SesionCreadaPor", fields: [createdById], references: [id])
+  closedById  String?
+  closedBy    User?     @relation("SesionCerradaPor", fields: [closedById], references: [id])
+  closedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  signers Signer[]
+
+  @@index([status, createdAt])
+  @@map("signing_sessions")
+}
+
+model Signer {
+  id        String         @id @default(cuid())
+  sessionId String
+  session   SigningSession @relation(fields: [sessionId], references: [id])
+
+  docType   DocType
+  docNumber String
+  /// Nombre completo (DNI) o razón social (RUC), verificado o declarado
+  displayName String
+  /// Solo RUC: nombre del representante que firma físicamente
+  repNombre String?
+  /// Solo RUC: DNI del representante
+  repDni    String?
+  cargo     String
+  parte     String
+
+  /// true si la identidad fue verificada contra RENIEC/SUNAT (Decolecta)
+  verified        Boolean @default(false)
+  /// Respuesta JSON cruda de Decolecta como evidencia de verificación
+  verificationRaw Json?
+
+  signMethod  SignMethod
+  /// Ruta relativa dentro de /storage/firmas
+  imagePath   String
+  /// SHA-256 hex del PNG de la firma (evidencia de integridad)
+  imageSha256 String
+  /// Timestamp del servidor (nunca del cliente)
+  signedAt    DateTime   @default(now())
+  ip          String
+  userAgent   String
+
+  // Un mismo documento de identidad no puede firmar dos veces la misma sesión
+  @@unique([sessionId, docNumber])
+  @@index([sessionId, signedAt])
+  @@map("signers")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  /// USER (interno autenticado), SIGNER (firmante público) o SYSTEM
+  actorType  String
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  /// p. ej. SESSION_CREATED, IDENTITY_LOOKUP, SIGNATURE_SAVED, SESSION_CLOSED, PDF_GENERATED
+  action     String
+  entityType String
+  entityId   String?
+  ip         String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+model IdentityCache {
+  id        String   @id @default(cuid())
+  docType   DocType
+  docNumber String
+  response  Json
+  fetchedAt DateTime @default(now())
+
+  @@unique([docType, docNumber])
+  @@map("identity_cache")
+}
