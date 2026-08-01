@@ -20,6 +20,24 @@ interface PasoIdentificacionProps {
   onChange: (identidad: IdentidadFirmante | null) => void;
 }
 
+/** Opciones de un toque para no obligar al firmante a redactar. */
+const CARGOS_FRECUENTES = [
+  "Árbitro único",
+  "Árbitro",
+  "Representante legal",
+  "Abogado(a)",
+  "Secretario(a) arbitral",
+  "Perito",
+  "Testigo",
+] as const;
+
+const PARTES_FRECUENTES = [
+  "Demandante",
+  "Demandado",
+  "Tribunal arbitral",
+  "Secretaría arbitral",
+] as const;
+
 async function leerMensajeDeError(res: Response): Promise<string> {
   try {
     const data = (await res.json()) as { error?: unknown };
@@ -153,7 +171,10 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
     onChange(identidadCompleta);
   }, [identidadCompleta, onChange]);
 
-  const mostrarRep = docType === "RUC" && (resultado !== null || manual);
+  /** La identidad quedó establecida (verificada o manual): recién entonces
+      se piden los datos de participación, para no abrumar al firmante. */
+  const identificado = resultado !== null || manual;
+  const mostrarRep = docType === "RUC" && identificado;
   const rucNoHabilitado = resultado?.tipo === "RUC" && !resultado.habilitado;
 
   return (
@@ -343,26 +364,74 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
         </fieldset>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={`${idBase}-cargo`}>Cargo o rol en la audiencia</Label>
-          <Input
-            id={`${idBase}-cargo`}
-            value={cargo}
-            onChange={(e) => setCargo(e.target.value)}
-            placeholder='Ej.: "Árbitro único", "Representante legal"'
-          />
+      {/* Los datos de participación aparecen recién con la identidad
+          establecida: el firmante resuelve una sola cosa a la vez. */}
+      {identificado ? (
+        <div className="anim-subir flex flex-col gap-4 border-t border-humo-200 pt-5">
+          <div>
+            <h3 className="text-sm font-semibold text-ciruela-700">
+              Su participación en la audiencia
+            </h3>
+            <p className="mt-0.5 text-xs leading-relaxed text-ciruela-400">
+              Estos datos aparecerán bajo su firma en la planilla del acta.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor={`${idBase}-cargo`}>Cargo o rol en la audiencia</Label>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Cargos frecuentes">
+              {CARGOS_FRECUENTES.map((opcion) => (
+                <button
+                  key={opcion}
+                  type="button"
+                  onClick={() => setCargo(opcion)}
+                  className={
+                    cargo === opcion
+                      ? "rounded-full border border-guinda-300 bg-guinda-50 px-3 py-1.5 text-xs font-medium text-guinda-700 outline-none focus-visible:ring-2 focus-visible:ring-guinda-500"
+                      : "rounded-full border border-humo-300 bg-white px-3 py-1.5 text-xs font-medium text-ciruela-500 outline-none transition-colors duration-150 hover:border-ciruela-300 hover:text-ciruela-700 focus-visible:ring-2 focus-visible:ring-guinda-500"
+                  }
+                >
+                  {opcion}
+                </button>
+              ))}
+            </div>
+            <Input
+              id={`${idBase}-cargo`}
+              value={cargo}
+              onChange={(e) => setCargo(e.target.value)}
+              placeholder="Seleccione una opción o escriba su cargo"
+              className="min-h-11"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor={`${idBase}-parte`}>Parte que representa</Label>
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Partes frecuentes">
+              {PARTES_FRECUENTES.map((opcion) => (
+                <button
+                  key={opcion}
+                  type="button"
+                  onClick={() => setParte(opcion)}
+                  className={
+                    parte === opcion
+                      ? "rounded-full border border-guinda-300 bg-guinda-50 px-3 py-1.5 text-xs font-medium text-guinda-700 outline-none focus-visible:ring-2 focus-visible:ring-guinda-500"
+                      : "rounded-full border border-humo-300 bg-white px-3 py-1.5 text-xs font-medium text-ciruela-500 outline-none transition-colors duration-150 hover:border-ciruela-300 hover:text-ciruela-700 focus-visible:ring-2 focus-visible:ring-guinda-500"
+                  }
+                >
+                  {opcion}
+                </button>
+              ))}
+            </div>
+            <Input
+              id={`${idBase}-parte`}
+              value={parte}
+              onChange={(e) => setParte(e.target.value)}
+              placeholder="Seleccione una opción o escríbala"
+              className="min-h-11"
+            />
+          </div>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={`${idBase}-parte`}>Parte que representa</Label>
-          <Input
-            id={`${idBase}-parte`}
-            value={parte}
-            onChange={(e) => setParte(e.target.value)}
-            placeholder='Ej.: "Demandante"'
-          />
-        </div>
-      </div>
+      ) : null}
     </div>
   );
 }

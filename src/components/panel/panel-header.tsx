@@ -33,7 +33,7 @@ export function PanelHeader({ nombre, role }: PanelHeaderProps) {
             href="/panel"
             className="flex items-center gap-3 rounded-[var(--radius-brand)] outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-guinda-500"
           >
-            <AnkawaLogo className="h-9 w-9" />
+            <AnkawaLogo className="h-12 w-auto sm:h-14" />
             <span className="titulo-institucional text-sm text-ciruela-700">
               Panel de audiencias
             </span>

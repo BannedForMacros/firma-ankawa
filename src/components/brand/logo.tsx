@@ -17,7 +17,7 @@ export function AnkawaLogo({ className }: AnkawaLogoProps) {
       width={96}
       height={96}
       priority
-      className={cn("h-12 w-12 object-contain", className)}
+      className={cn("h-14 w-auto object-contain", className)}
     />
   );
 }

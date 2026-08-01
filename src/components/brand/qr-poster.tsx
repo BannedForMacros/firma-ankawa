@@ -6,7 +6,18 @@ import QRCode from "qrcode";
 import { toPng } from "html-to-image";
 import { Download, MonitorUp, Printer } from "lucide-react";
 import { AlaPoligonal } from "@/components/brand/ala-poligonal";
+import { FirmasFondo } from "@/components/landing/firmas-fondo";
 import { cn } from "@/lib/utils";
+
+/** Esquina en "L" terracota para la mira del marco del QR. */
+function EsquinaMira({ className }: { className: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn("pointer-events-none absolute h-5 w-5 border-terracota-500", className)}
+    />
+  );
+}
 
 interface QrPosterProps {
   sesion: {
@@ -120,28 +131,37 @@ export function QrPoster({ sesion, url }: QrPosterProps) {
         ref={escenarioRef}
         className={cn(
           proyectando &&
-            "flex h-full w-full items-center justify-center overflow-auto bg-humo-100 p-8"
+            "relative flex h-full w-full items-center justify-center overflow-auto bg-humo-50 p-8"
         )}
       >
+        {/* En proyección, el fondo cobra vida: rúbricas trazándose en bucle */}
+        {proyectando && <FirmasFondo />}
         {/* Nodo exportable del póster */}
         <div
           ref={posterRef}
           className={cn(
             // `poster-imprimible`: al imprimir, globals.css oculta el resto
             // de la interfaz y deja únicamente este nodo (cartel limpio).
-            "poster-imprimible mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-[var(--radius-brand)] bg-white shadow-card",
+            "poster-imprimible relative mx-auto flex w-full max-w-md flex-col overflow-hidden rounded-[var(--radius-brand)] bg-white shadow-card",
             proyectando &&
-              "max-w-xl shadow-[0_2px_6px_rgb(30_18_32_/_0.06),0_32px_80px_-16px_rgb(30_18_32_/_0.25)]"
+              "anim-logo-entra max-w-2xl shadow-[0_2px_6px_rgb(30_18_32_/_0.06),0_40px_100px_-16px_rgb(30_18_32_/_0.3)]"
           )}
         >
+          {/* Facetas del cóndor en las esquinas del cartel */}
+          <svg aria-hidden="true" viewBox="0 0 40 40" className="pointer-events-none absolute left-3 top-5 h-6 w-6 opacity-80">
+            <polygon points="2,38 14,6 30,34" fill="#f5cdd1" />
+          </svg>
+          <svg aria-hidden="true" viewBox="0 0 40 40" className="pointer-events-none absolute right-4 top-8 h-4 w-4 opacity-70">
+            <polygon points="4,6 36,14 16,36" fill="#d07a54" opacity={0.5} />
+          </svg>
           {/* Cabecera institucional: logo a todo color sobre blanco */}
           <header className="flex flex-col items-center gap-4 px-8 pb-6 pt-8 text-center">
             <Image
               src="/brand/logo.png"
               alt="Ankawa Internacional"
-              width={72}
-              height={72}
-              className="h-18 w-18 shrink-0 object-contain"
+              width={140}
+              height={99}
+              className={cn("h-20 w-auto shrink-0 object-contain", proyectando && "h-28")}
             />
             <div>
               <p className="titulo-institucional text-[0.6rem] leading-relaxed text-ciruela-400">
@@ -164,45 +184,77 @@ export function QrPoster({ sesion, url }: QrPosterProps) {
             </p>
           </div>
 
-          {/* Código QR con marco guinda */}
+          {/* Código QR: marco guinda con mira terracota y guiones en marcha */}
           <div className="flex flex-1 flex-col items-center px-8 py-8">
-            <div className="rounded-none border-8 border-guinda-500 bg-white p-2">
-              {qrDataUrl ? (
-                <img
-                  src={qrDataUrl}
-                  alt={`Código QR para firmar el acta de la sesión ${sesion.code}`}
-                  className={cn("block h-56 w-56", proyectando && "h-80 w-80")}
+            <div className={cn("relative", proyectando && "anim-latido")}>
+              {/* Caravana de guiones alrededor del marco */}
+              <svg
+                aria-hidden="true"
+                className="pointer-events-none absolute -inset-4 h-[calc(100%+2rem)] w-[calc(100%+2rem)] text-guinda-300"
+              >
+                <rect
+                  x="2"
+                  y="2"
+                  width="calc(100% - 4px)"
+                  height="calc(100% - 4px)"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeDasharray="10 14"
+                  strokeLinecap="round"
+                  className="anim-marcha"
                 />
-              ) : (
-                <div
-                  role="status"
-                  aria-label="Generando código QR"
-                  className={cn(
-                    "flex h-56 w-56 items-center justify-center bg-humo-100",
-                    proyectando && "h-80 w-80"
-                  )}
-                >
-                  <span className="text-sm text-ciruela-400">Generando código QR…</span>
-                </div>
-              )}
+              </svg>
+              {/* Esquinas de mira */}
+              <EsquinaMira className="-left-2 -top-2 border-l-4 border-t-4" />
+              <EsquinaMira className="-right-2 -top-2 border-r-4 border-t-4" />
+              <EsquinaMira className="-bottom-2 -left-2 border-b-4 border-l-4" />
+              <EsquinaMira className="-bottom-2 -right-2 border-b-4 border-r-4" />
+
+              <div className="rounded-none border-8 border-guinda-500 bg-white p-2">
+                {qrDataUrl ? (
+                  <img
+                    src={qrDataUrl}
+                    alt={`Código QR para firmar el acta de la sesión ${sesion.code}`}
+                    className={cn("block h-56 w-56", proyectando && "h-96 w-96")}
+                  />
+                ) : (
+                  <div
+                    role="status"
+                    aria-label="Generando código QR"
+                    className={cn(
+                      "flex h-56 w-56 items-center justify-center bg-humo-100",
+                      proyectando && "h-96 w-96"
+                    )}
+                  >
+                    <span className="text-sm text-ciruela-400">Generando código QR…</span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Código corto */}
+            {/* Código corto, protagonista absoluto */}
             <p
               aria-label={`Código de la sesión: ${sesion.code}`}
               className={cn(
-                "mt-6 pl-[0.3em] text-center font-[family-name:var(--font-display)] text-5xl font-bold tracking-[0.3em] text-ciruela-700",
-                proyectando && "text-6xl"
+                "mt-7 pl-[0.3em] text-center font-[family-name:var(--font-display)] text-6xl font-extrabold tracking-[0.3em] text-ciruela-700",
+                proyectando && "text-8xl"
               )}
             >
               {sesion.code}
             </p>
 
             {/* Instrucciones */}
-            <p className="mt-6 text-center text-base font-semibold text-berenjena">
+            <p
+              className={cn(
+                "mt-6 text-center text-base font-semibold text-berenjena",
+                proyectando && "anim-latido text-xl"
+              )}
+              style={proyectando ? ({ "--retraso": "800ms" } as React.CSSProperties) : undefined}
+            >
               Escanee el código para firmar el acta
             </p>
-            <p className="mt-1 text-center text-sm text-ciruela-500">
+            <p className={cn("mt-1 text-center text-sm text-ciruela-500", proyectando && "text-base")}>
               o ingrese el código en{" "}
               {direccionLegible ? (
                 <span className="font-semibold text-ciruela-700">{direccionLegible}</span>

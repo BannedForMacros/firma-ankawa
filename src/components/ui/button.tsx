@@ -15,7 +15,7 @@ const buttonVariants = cva(
         ghost:
           "bg-transparent text-ciruela-700 hover:bg-humo-200 active:bg-humo-300",
         destructive:
-          "bg-terracota-500 text-white shadow-card hover:bg-terracota-600 active:bg-terracota-600",
+          "bg-guinda-700 text-white shadow-card hover:bg-guinda-800 active:bg-guinda-900",
         link: "bg-transparent text-guinda-500 underline-offset-4 hover:underline hover:text-guinda-600",
       },
       size: {

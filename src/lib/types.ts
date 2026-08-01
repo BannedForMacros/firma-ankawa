@@ -20,6 +20,7 @@ export interface SesionResumenDto {
   status: EstadoSesion;
   totalFirmas: number;
   createdAt: string; // ISO
+  closedAt: string | null; // ISO
 }
 
 export interface FirmaResumenDto {

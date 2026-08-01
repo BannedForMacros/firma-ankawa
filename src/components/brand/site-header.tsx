@@ -10,17 +10,17 @@ export function SiteHeader() {
   return (
     <header className="bg-white">
       <div className="border-b border-humo-200">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2.5 sm:px-6 sm:py-3">
           <Link
             href="/"
             className="flex items-center gap-3 rounded-[var(--radius-brand)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-guinda-500"
           >
-            <AnkawaLogo className="h-10 w-10" />
+            <AnkawaLogo className="h-14 w-auto sm:h-[4.5rem]" />
             <span className="flex flex-col leading-tight">
-              <span className="titulo-institucional hidden text-[0.6rem] tracking-[0.18em] text-ciruela-400 sm:block">
+              <span className="titulo-institucional hidden text-[0.65rem] tracking-[0.18em] text-ciruela-400 sm:block">
                 Centro de Arbitraje y Resolución de Disputas
               </span>
-              <span className="titulo-institucional text-sm tracking-[0.22em] text-ciruela-700">
+              <span className="titulo-institucional text-base tracking-[0.22em] text-ciruela-700 sm:text-lg">
                 CARD – ANKAWA INTL
               </span>
             </span>

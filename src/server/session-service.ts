@@ -58,6 +58,7 @@ function toResumenDto(
     status: sesion.status,
     totalFirmas: sesion._count.signers,
     createdAt: sesion.createdAt.toISOString(),
+    closedAt: sesion.closedAt?.toISOString() ?? null,
   };
 }
 
@@ -185,6 +186,38 @@ export async function resolverCodigoCorto(
     select: { token: true, status: true },
   });
   return sesion;
+}
+
+export interface ActividadRecienteDto {
+  id: string;
+  displayName: string;
+  sessionId: string;
+  sessionCode: string;
+  asunto: string;
+  verified: boolean;
+  signedAt: string; // ISO
+}
+
+/** Últimas firmas registradas en cualquier sesión (para el panel). */
+export async function listarActividadReciente(
+  limite = 6,
+): Promise<ActividadRecienteDto[]> {
+  const firmas = await db.signer.findMany({
+    orderBy: { signedAt: "desc" },
+    take: limite,
+    include: {
+      session: { select: { id: true, code: true, asunto: true } },
+    },
+  });
+  return firmas.map((firma) => ({
+    id: firma.id,
+    displayName: firma.displayName,
+    sessionId: firma.session.id,
+    sessionCode: firma.session.code,
+    asunto: firma.session.asunto,
+    verified: firma.verified,
+    signedAt: firma.signedAt.toISOString(),
+  }));
 }
 
 /** Datos completos para la planilla PDF (server-only). */

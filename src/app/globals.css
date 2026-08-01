@@ -194,6 +194,56 @@ body {
   animation: marquesina var(--marquesina-dur, 30s) linear infinite;
 }
 
+@keyframes pulso-anillo {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.65);
+    opacity: 0;
+  }
+}
+
+@keyframes marcha {
+  to {
+    stroke-dashoffset: -96;
+  }
+}
+
+@keyframes girar-lento {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes latido {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.035);
+  }
+}
+
+/* Anillo que emana de un elemento (colocar como span absolute inset-0). */
+.anim-pulso-anillo {
+  animation: pulso-anillo 2.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  animation-delay: var(--retraso, 0ms);
+}
+/* Guiones de un trazo SVG marchando (usar con stroke-dasharray en px). */
+.anim-marcha {
+  animation: marcha 4s linear infinite;
+}
+.anim-girar-lento {
+  animation: girar-lento 26s linear infinite;
+}
+.anim-latido {
+  animation: latido 3.2s ease-in-out infinite;
+  animation-delay: var(--retraso, 0ms);
+}
+
 /* Trazo de firma que se dibuja en bucle (usar con pathLength="1"). */
 .trazo-firma {
   fill: none;
