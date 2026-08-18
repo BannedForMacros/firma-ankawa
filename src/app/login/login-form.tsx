@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { Eye, EyeOff } from "lucide-react";
 
 /** Solo aceptamos rutas internas como destino posterior al inicio de sesión. */
 function destinoSeguro(callbackUrl: string | null): string {
@@ -26,6 +27,7 @@ export function LoginForm() {
 
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [enviando, setEnviando] = React.useState(false);
 
@@ -74,15 +76,31 @@ export function LoginForm() {
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="login-password">Contraseña</Label>
-        <Input
-          id="login-password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-        />
+        <div className="relative">
+          <Input
+            id="login-password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className="pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-[var(--radius-brand)] p-1.5 text-ciruela-400 transition-colors hover:bg-humo-100 hover:text-ciruela-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-guinda-500"
+            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            aria-pressed={showPassword}
+          >
+            {showPassword ? (
+              <EyeOff className="h-4 w-4" aria-hidden="true" />
+            ) : (
+              <Eye className="h-4 w-4" aria-hidden="true" />
+            )}
+          </button>
+        </div>
       </div>
 
       {error !== null && (

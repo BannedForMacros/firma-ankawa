@@ -19,6 +19,7 @@ import { Revelar } from "@/components/landing/revelar";
 import { ContadorAnimado } from "@/components/panel/contador-animado";
 import { NuevaSesionDialog } from "@/components/panel/nueva-sesion-dialog";
 import { SesionCard } from "@/components/panel/sesion-card";
+import { SesionesCerradasTabla } from "@/components/panel/sesiones-cerradas-tabla";
 import type { SesionResumenDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -323,6 +324,26 @@ export default async function PanelPage() {
               </Revelar>
 
             </aside>
+
+            {/* Archivo de sesiones cerradas: tabla institucional a ancho completo */}
+            {cerradas.length > 0 ? (
+              <div className="lg:col-span-2">
+                <Revelar retrasoMs={150}>
+                  <section aria-label="Sesiones cerradas" className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <span className="barra-guinda !h-1 !w-8" aria-hidden="true" />
+                      <h3 className="flex items-baseline gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-ciruela-400">
+                        Sesiones cerradas
+                        <span className="font-normal tabular-nums text-ciruela-300">
+                          ({cerradas.length})
+                        </span>
+                      </h3>
+                    </div>
+                    <SesionesCerradasTabla sesiones={cerradas} />
+                  </section>
+                </Revelar>
+              </div>
+            ) : null}
           </div>
         )}
       </div>
