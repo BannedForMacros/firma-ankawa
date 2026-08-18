@@ -26,13 +26,57 @@ async function main(): Promise<void> {
     },
   });
 
+  const cargosSeed = [
+    "Representante legal del Centro",
+    "Representante común",
+    "Funcionario público",
+    "Adjudicador único",
+    "Adjudicador de parte",
+    "Presidente de la JPRD",
+    "Alcalde",
+    "Gerente municipal",
+    "Director de administración",
+    "Secretario(a) arbitral",
+    "Árbitro",
+    "Árbitro único",
+    "Abogado(a)",
+    "Perito",
+    "Testigo",
+  ];
+
+  const partesSeed = [
+    "Demandante",
+    "Demandado",
+    "Tribunal arbitral",
+    "Secretaría arbitral",
+    "Centro arbitral",
+    "Comunidad",
+    "Municipalidad",
+  ];
+
+  for (const [indice, nombre] of cargosSeed.entries()) {
+    await prisma.cargo.upsert({
+      where: { nombre },
+      update: {},
+      create: { nombre, orden: indice },
+    });
+  }
+
+  for (const [indice, nombre] of partesSeed.entries()) {
+    await prisma.parte.upsert({
+      where: { nombre },
+      update: {},
+      create: { nombre, orden: indice },
+    });
+  }
+
   await prisma.auditLog.create({
     data: {
       actorType: "SYSTEM",
       action: "SEED_EXECUTED",
       entityType: "User",
       entityId: admin.id,
-      metadata: { usuarios: [admin.email, operador.email] },
+      metadata: { usuarios: [admin.email, operador.email], cargos: cargosSeed.length, partes: partesSeed.length },
     },
   });
 

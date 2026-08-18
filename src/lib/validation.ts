@@ -84,6 +84,19 @@ export const crearUsuarioSchema = z.object({
   role: z.enum(["ADMIN", "OPERADOR"]),
 });
 
+export const catalogoItemSchema = z.object({
+  nombre: z.string().trim().min(2, "El nombre debe tener al menos 2 caracteres.").max(120),
+  orden: z.number().int().min(0).optional(),
+});
+
+export const actualizarCatalogoItemSchema = z.object({
+  nombre: z.string().trim().min(2, "El nombre debe tener al menos 2 caracteres.").max(120).optional(),
+  orden: z.number().int().min(0).optional(),
+  activo: z.boolean().optional(),
+});
+
 export type CrearSesionInput = z.infer<typeof crearSesionSchema>;
 export type GuardarFirmaInput = z.infer<typeof guardarFirmaSchema>;
 export type ConsultaIdentidadInput = z.infer<typeof consultaIdentidadSchema>;
+export type CatalogoItemInput = z.infer<typeof catalogoItemSchema>;
+export type ActualizarCatalogoItemInput = z.infer<typeof actualizarCatalogoItemSchema>;

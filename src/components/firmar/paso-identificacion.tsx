@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { dniSchema, rucSchema } from "@/lib/validation";
-import type { IdentidadDto, TipoDocumento } from "@/lib/types";
+import type { CatalogoItemDto, IdentidadDto, TipoDocumento } from "@/lib/types";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,6 +63,48 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
   const [repDni, setRepDni] = useState("");
   const [cargo, setCargo] = useState("");
   const [parte, setParte] = useState("");
+
+  const [cargos, setCargos] = useState<CatalogoItemDto[]>([]);
+  const [partes, setPartes] = useState<CatalogoItemDto[]>([]);
+  const [cargandoCatalogos, setCargandoCatalogos] = useState(true);
+
+  const cargoInputRef = useRef<HTMLInputElement>(null);
+  const parteInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let cancelado = false;
+    async function cargar() {
+      try {
+        const [resCargos, resPartes] = await Promise.all([
+          fetch("/api/cargos"),
+          fetch("/api/partes"),
+        ]);
+        const dataCargos = (await resCargos.json().catch(() => ({}))) as { cargos?: CatalogoItemDto[] };
+        const dataPartes = (await resPartes.json().catch(() => ({}))) as { partes?: CatalogoItemDto[] };
+        if (!cancelado) {
+          setCargos(dataCargos.cargos ?? []);
+          setPartes(dataPartes.partes ?? []);
+        }
+      } catch {
+        // Si falla, se usan las opciones frecuentes como fallback.
+      } finally {
+        if (!cancelado) setCargandoCatalogos(false);
+      }
+    }
+    void cargar();
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  const opcionesCargo = useMemo(
+    () => (cargos.length > 0 ? cargos.map((c) => c.nombre) : CARGOS_FRECUENTES.slice()),
+    [cargos]
+  );
+  const opcionesParte = useMemo(
+    () => (partes.length > 0 ? partes.map((p) => p.nombre) : PARTES_FRECUENTES.slice()),
+    [partes]
+  );
 
   const schemaNumero = docType === "DNI" ? dniSchema : rucSchema;
   const validacionNumero = schemaNumero.safeParse(numero);
@@ -176,6 +218,48 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
   const identificado = resultado !== null || manual;
   const mostrarRep = docType === "RUC" && identificado;
   const rucNoHabilitado = resultado?.tipo === "RUC" && !resultado.habilitado;
+
+  function renderChips(
+    opciones: string[],
+    valor: string,
+    onSeleccionar: (valor: string) => void,
+    onOtro: () => void,
+    labelOtro: string,
+  ) {
+    const esOtro = valor.length > 0 && !opciones.includes(valor);
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        {opciones.map((opcion) => {
+          const seleccionado = valor === opcion;
+          return (
+            <button
+              key={opcion}
+              type="button"
+              onClick={() => onSeleccionar(opcion)}
+              className={
+                seleccionado
+                  ? "rounded-full border border-guinda-300 bg-guinda-50 px-3 py-1.5 text-xs font-medium text-guinda-700 outline-none focus-visible:ring-2 focus-visible:ring-guinda-500"
+                  : "rounded-full border border-humo-300 bg-white px-3 py-1.5 text-xs font-medium text-ciruela-500 outline-none transition-colors duration-150 hover:border-ciruela-300 hover:text-ciruela-700 focus-visible:ring-2 focus-visible:ring-guinda-500"
+              }
+            >
+              {opcion}
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          onClick={onOtro}
+          className={
+            esOtro
+              ? "rounded-full border border-guinda-300 bg-guinda-50 px-3 py-1.5 text-xs font-medium text-guinda-700 outline-none focus-visible:ring-2 focus-visible:ring-guinda-500"
+              : "rounded-full border border-dashed border-ciruela-300 bg-white px-3 py-1.5 text-xs font-medium text-ciruela-500 outline-none transition-colors duration-150 hover:border-ciruela-400 hover:text-ciruela-700 focus-visible:ring-2 focus-visible:ring-guinda-500"
+          }
+        >
+          {labelOtro}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -379,24 +463,23 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor={`${idBase}-cargo`}>Cargo o rol en la audiencia</Label>
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Cargos frecuentes">
-              {CARGOS_FRECUENTES.map((opcion) => (
-                <button
-                  key={opcion}
-                  type="button"
-                  onClick={() => setCargo(opcion)}
-                  className={
-                    cargo === opcion
-                      ? "rounded-full border border-guinda-300 bg-guinda-50 px-3 py-1.5 text-xs font-medium text-guinda-700 outline-none focus-visible:ring-2 focus-visible:ring-guinda-500"
-                      : "rounded-full border border-humo-300 bg-white px-3 py-1.5 text-xs font-medium text-ciruela-500 outline-none transition-colors duration-150 hover:border-ciruela-300 hover:text-ciruela-700 focus-visible:ring-2 focus-visible:ring-guinda-500"
-                  }
-                >
-                  {opcion}
-                </button>
-              ))}
-            </div>
+            {cargandoCatalogos ? (
+              <p className="text-xs text-ciruela-400">Cargando opciones…</p>
+            ) : (
+              renderChips(
+                opcionesCargo,
+                cargo,
+                setCargo,
+                () => {
+                  setCargo("");
+                  cargoInputRef.current?.focus();
+                },
+                "Otro cargo",
+              )
+            )}
             <Input
               id={`${idBase}-cargo`}
+              ref={cargoInputRef}
               value={cargo}
               onChange={(e) => setCargo(e.target.value)}
               placeholder="Seleccione una opción o escriba su cargo"
@@ -406,24 +489,23 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor={`${idBase}-parte`}>Parte que representa</Label>
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Partes frecuentes">
-              {PARTES_FRECUENTES.map((opcion) => (
-                <button
-                  key={opcion}
-                  type="button"
-                  onClick={() => setParte(opcion)}
-                  className={
-                    parte === opcion
-                      ? "rounded-full border border-guinda-300 bg-guinda-50 px-3 py-1.5 text-xs font-medium text-guinda-700 outline-none focus-visible:ring-2 focus-visible:ring-guinda-500"
-                      : "rounded-full border border-humo-300 bg-white px-3 py-1.5 text-xs font-medium text-ciruela-500 outline-none transition-colors duration-150 hover:border-ciruela-300 hover:text-ciruela-700 focus-visible:ring-2 focus-visible:ring-guinda-500"
-                  }
-                >
-                  {opcion}
-                </button>
-              ))}
-            </div>
+            {cargandoCatalogos ? (
+              <p className="text-xs text-ciruela-400">Cargando opciones…</p>
+            ) : (
+              renderChips(
+                opcionesParte,
+                parte,
+                setParte,
+                () => {
+                  setParte("");
+                  parteInputRef.current?.focus();
+                },
+                "Otra parte",
+              )
+            )}
             <Input
               id={`${idBase}-parte`}
+              ref={parteInputRef}
               value={parte}
               onChange={(e) => setParte(e.target.value)}
               placeholder="Seleccione una opción o escríbala"

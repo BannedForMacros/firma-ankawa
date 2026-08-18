@@ -10,13 +10,19 @@ export type AuditAction =
   | "USER_CREATED"
   | "USER_UPDATED"
   | "LOGIN_FAILED"
-  | "SEED_EXECUTED";
+  | "SEED_EXECUTED"
+  | "CARGO_CREATED"
+  | "CARGO_UPDATED"
+  | "CARGO_DELETED"
+  | "PARTE_CREATED"
+  | "PARTE_UPDATED"
+  | "PARTE_DELETED";
 
 export interface AuditEntry {
   actorType: "USER" | "SIGNER" | "SYSTEM";
   userId?: string;
   action: AuditAction;
-  entityType: "SigningSession" | "Signer" | "User" | "Identity";
+  entityType: "SigningSession" | "Signer" | "User" | "Identity" | "Cargo" | "Parte";
   entityId?: string;
   ip?: string;
   userAgent?: string;

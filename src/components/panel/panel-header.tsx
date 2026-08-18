@@ -24,6 +24,9 @@ export function PanelHeader({ nombre, role }: PanelHeaderProps) {
   const pathname = usePathname();
   const enUsuarios =
     pathname === "/panel/usuarios" || pathname.startsWith("/panel/usuarios/");
+  const enConfiguracion =
+    pathname === "/panel/configuracion" || pathname.startsWith("/panel/configuracion/");
+  const enAdministracion = enUsuarios || enConfiguracion;
 
   return (
     <header className="bg-white">
@@ -42,10 +45,10 @@ export function PanelHeader({ nombre, role }: PanelHeaderProps) {
           <nav aria-label="Navegación del panel" className="flex items-center gap-4">
             <Link
               href="/panel"
-              aria-current={!enUsuarios ? "page" : undefined}
+              aria-current={!enAdministracion ? "page" : undefined}
               className={cn(
                 navItemBase,
-                !enUsuarios
+                !enAdministracion
                   ? "border-guinda-500 font-semibold text-ciruela-700"
                   : "border-transparent font-medium text-ciruela-400 hover:text-ciruela-700"
               )}
@@ -53,18 +56,32 @@ export function PanelHeader({ nombre, role }: PanelHeaderProps) {
               Sesiones
             </Link>
             {role === "ADMIN" ? (
-              <Link
-                href="/panel/usuarios"
-                aria-current={enUsuarios ? "page" : undefined}
-                className={cn(
-                  navItemBase,
-                  enUsuarios
-                    ? "border-guinda-500 font-semibold text-ciruela-700"
-                    : "border-transparent font-medium text-ciruela-400 hover:text-ciruela-700"
-                )}
-              >
-                Usuarios
-              </Link>
+              <>
+                <Link
+                  href="/panel/usuarios"
+                  aria-current={enUsuarios ? "page" : undefined}
+                  className={cn(
+                    navItemBase,
+                    enUsuarios
+                      ? "border-guinda-500 font-semibold text-ciruela-700"
+                      : "border-transparent font-medium text-ciruela-400 hover:text-ciruela-700"
+                  )}
+                >
+                  Usuarios
+                </Link>
+                <Link
+                  href="/panel/configuracion/cargos-partes"
+                  aria-current={enConfiguracion ? "page" : undefined}
+                  className={cn(
+                    navItemBase,
+                    enConfiguracion
+                      ? "border-guinda-500 font-semibold text-ciruela-700"
+                      : "border-transparent font-medium text-ciruela-400 hover:text-ciruela-700"
+                  )}
+                >
+                  Configuración
+                </Link>
+              </>
             ) : null}
           </nav>
 

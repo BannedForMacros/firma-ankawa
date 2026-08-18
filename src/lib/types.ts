@@ -79,6 +79,13 @@ export interface IdentidadRucDto {
 
 export type IdentidadDto = IdentidadDniDto | IdentidadRucDto;
 
+export interface CatalogoItemDto {
+  id: string;
+  nombre: string;
+  orden: number;
+  activo: boolean;
+}
+
 /** Envoltura estándar de error de las rutas API. */
 export interface ApiError {
   error: string;
