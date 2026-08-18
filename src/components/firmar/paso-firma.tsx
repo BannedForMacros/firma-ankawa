@@ -15,21 +15,20 @@ interface PasoFirmaProps {
 
 export function PasoFirma({ firma, onChange }: PasoFirmaProps) {
   const [metodo, setMetodo] = useState<"dibujar" | "subir">("dibujar");
-  // Al incrementarse, remonta el lienzo y el cargador para rehacer la firma.
   const [reinicio, setReinicio] = useState(0);
 
   const manejarDibujo = useCallback(
     (dataUrl: string | null) => {
       onChange(dataUrl ? { dataUrl, metodo: "DRAWN" } : null);
     },
-    [onChange],
+    [onChange]
   );
 
   const manejarCarga = useCallback(
     (dataUrl: string | null) => {
       onChange(dataUrl ? { dataUrl, metodo: "UPLOADED" } : null);
     },
-    [onChange],
+    [onChange]
   );
 
   const rehacer = useCallback(() => {
@@ -38,12 +37,11 @@ export function PasoFirma({ firma, onChange }: PasoFirmaProps) {
   }, [onChange]);
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <div>
-        <h2 className="text-base font-semibold text-ciruela-700">Estampe su firma</h2>
-        <p className="mt-1 text-sm leading-relaxed text-ciruela-400">
-          Firme dentro del recuadro con el dedo o un lápiz óptico. Si lo prefiere, suba una
-          fotografía o imagen de su firma.
+        <h2 className="text-lg font-semibold text-ciruela-700">Estampe su firma</h2>
+        <p className="mt-0.5 text-sm text-ciruela-400">
+          Dibuje o suba una imagen de su firma.
         </p>
       </div>
 
@@ -64,22 +62,20 @@ export function PasoFirma({ firma, onChange }: PasoFirmaProps) {
       </Tabs>
 
       {firma ? (
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium text-ciruela-700">
-            Así quedará su firma en el acta
-          </p>
-          <div className="fondo-ajedrez flex items-center justify-center rounded-[var(--radius-brand)] border border-humo-300 p-4">
-            {/* eslint-disable-next-line @next/next/no-img-element -- data URL local, no optimizable */}
+        <div className="flex flex-col gap-2 rounded-[var(--radius-brand)] border border-humo-300 bg-humo-50 p-3">
+          <p className="text-xs font-medium text-ciruela-700">Vista previa</p>
+          <div className="fondo-ajedrez flex items-center justify-center rounded-[var(--radius-brand)] border border-humo-300 p-3">
+            {/* eslint-disable-next-line @next/next/no-img-element -- data URL local */}
             <img
               src={firma.dataUrl}
               alt="Previsualización de su firma"
-              className="max-h-32 max-w-full object-contain"
+              className="max-h-28 max-w-full object-contain"
             />
           </div>
           <div>
-            <Button variant="outline" size="sm" onClick={rehacer}>
+            <Button variant="outline" size="sm" onClick={rehacer} className="min-h-10 w-full sm:w-auto">
               <RotateCcw className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-              Rehacer la firma
+              Rehacer firma
             </Button>
           </div>
         </div>

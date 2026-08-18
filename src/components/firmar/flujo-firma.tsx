@@ -38,9 +38,9 @@ interface FlujoFirmaProps {
 }
 
 const PASOS = [
-  { id: "identificacion", label: "Identificación" },
+  { id: "identificacion", label: "Datos" },
   { id: "firma", label: "Firma" },
-  { id: "confirmacion", label: "Confirmación" },
+  { id: "confirmacion", label: "Confirmar" },
 ] as const;
 
 interface ResultadoExito {
@@ -56,7 +56,7 @@ async function leerMensajeDeError(res: Response): Promise<string> {
       return data.error;
     }
   } catch {
-    // El cuerpo no era JSON: se usa el mensaje genérico.
+    // El cuerpo no era JSON.
   }
   return "No se pudo registrar la firma. Verifique su conexión e intente nuevamente.";
 }
@@ -114,10 +114,10 @@ export function FlujoFirma({ sesion, token }: FlujoFirmaProps) {
 
       if (res.status === 201) {
         setExito({
-          sha256: (await res.json().then((d: unknown) => {
+          sha256: await res.json().then((d: unknown) => {
             const cuerpo = d as { sha256?: unknown };
             return typeof cuerpo.sha256 === "string" ? cuerpo.sha256 : "";
-          })),
+          }),
           displayName: identidad.displayName,
           hora: new Date().toLocaleTimeString("es-PE", {
             hour: "2-digit",
@@ -168,35 +168,37 @@ export function FlujoFirma({ sesion, token }: FlujoFirmaProps) {
           id="titulo-firma-registrada"
           className="mt-5 text-balance font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight text-ciruela-700"
         >
-          Su firma quedó registrada
+          Firma registrada
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-berenjena">
           <span className="font-semibold">{exito.displayName}</span>
           <br />
-          Firma registrada a las {exito.hora}.
+          {exito.hora}
         </p>
         <div className="mt-6 w-full max-w-md rounded-[var(--radius-brand)] bg-humo-100 px-4 py-3 text-left">
           <p className="titulo-institucional text-[0.6rem] text-ciruela-400">
-            Código de verificación de integridad
+            Código de integridad
           </p>
           <code className="mt-1.5 block break-all text-[0.7rem] leading-relaxed tabular-nums text-ciruela-700">
             {exito.sha256}
           </code>
         </div>
         <p className="mt-4 max-w-md text-xs leading-relaxed text-ciruela-400">
-          Puede cerrar esta página. La secretaría arbitral conserva la constancia de su firma.
+          Puede cerrar esta página.
         </p>
       </section>
     );
   }
 
   const puedeContinuar = paso === 0 ? identidad !== null : paso === 1 ? firma !== null : false;
+  const mostrarAtras = paso > 0;
+  const mostrarContinuar = paso < 2;
 
   return (
-    <section aria-label="Proceso de firma del acta" className="flex flex-col gap-6">
+    <section aria-label="Proceso de firma del acta" className="flex flex-col gap-5">
       <Stepper steps={PASOS} current={paso} />
 
-      <div className="rounded-[var(--radius-brand)] bg-white p-5 shadow-card sm:p-6">
+      <div className="rounded-[var(--radius-brand)] bg-white p-4 shadow-card sm:p-6">
         <div className={cn(paso === 0 ? "block" : "hidden")}>
           <PasoIdentificacion token={token} onChange={manejarIdentidad} />
         </div>
@@ -222,7 +224,7 @@ export function FlujoFirma({ sesion, token }: FlujoFirmaProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="mt-3 min-h-11 border-humo-300 hover:border-ciruela-300"
+                  className="mt-3 min-h-11 w-full border-humo-300 hover:border-ciruela-300"
                   onClick={() => setSesionCerrada(true)}
                 >
                   Actualizar estado de la sesión
@@ -233,23 +235,32 @@ export function FlujoFirma({ sesion, token }: FlujoFirmaProps) {
         ) : null}
       </div>
 
-      {/* Navegación consistente Atrás / Continuar */}
-      <div className="flex items-center justify-between gap-3">
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={retroceder}
-          disabled={paso === 0 || enviando}
-          className={cn(
-            "border-humo-300 hover:border-ciruela-300",
-            paso === 0 && "invisible",
-          )}
-        >
-          <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-          Atrás
-        </Button>
-        {paso < 2 ? (
-          <Button size="lg" onClick={avanzar} disabled={!puedeContinuar}>
+      {/* Navegación directa y cómoda en móvil */}
+      <div
+        className={cn(
+          "flex gap-3",
+          mostrarAtras ? "flex-col-reverse sm:flex-row sm:items-center sm:justify-between" : "flex-col"
+        )}
+      >
+        {mostrarAtras ? (
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={retroceder}
+            disabled={enviando}
+            className="min-h-12 w-full border-humo-300 hover:border-ciruela-300 sm:w-auto"
+          >
+            <ArrowLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+            Atrás
+          </Button>
+        ) : null}
+        {mostrarContinuar ? (
+          <Button
+            size="lg"
+            onClick={avanzar}
+            disabled={!puedeContinuar || enviando}
+            className="min-h-12 w-full sm:w-auto"
+          >
             Continuar
             <ArrowRight className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
           </Button>
