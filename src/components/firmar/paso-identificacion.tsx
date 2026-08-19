@@ -28,13 +28,6 @@ const CARGOS_FRECUENTES = [
   "Testigo",
 ] as const;
 
-const PARTES_FRECUENTES = [
-  "Demandante",
-  "Demandado",
-  "Tribunal arbitral",
-  "Secretaría arbitral",
-] as const;
-
 async function leerMensajeDeError(res: Response): Promise<string> {
   try {
     const data = (await res.json()) as { error?: unknown };
