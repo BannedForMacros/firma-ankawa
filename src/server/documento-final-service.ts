@@ -1,33 +1,38 @@
 import { db } from "@/lib/db";
-import { guardarDocumentoSesion } from "@/lib/storage";
+import { guardarDocumentoFirmado } from "@/lib/storage";
 import { generarPlanillaPdf } from "@/lib/pdf/planilla";
 
 /**
- * Genera la planilla final (documento original + firmas) y la persiste como
- * el documento firmado oficial de la sesión. Sobrescribe cualquier versión
- * anterior en la misma ruta.
+ * Genera la planilla final para cada documento de la sesión y la persiste
+ * como documento firmado oficial. Los documentos que ya tengan un PDF firmado
+ * previo se regeneran y sobrescriben.
  */
-export async function generarYGuardarDocumentoFirmado(
+export async function generarYGuardarDocumentosFirmados(
   sessionId: string,
-): Promise<string | null> {
-  const sesion = await db.signingSession.findUnique({
-    where: { id: sessionId },
-    select: { documentoPdf: true },
+): Promise<void> {
+  const documentos = await db.sessionDocument.findMany({
+    where: { sessionId },
+    orderBy: { orden: "asc" },
   });
 
-  if (!sesion?.documentoPdf) return null;
+  if (documentos.length === 0) return;
 
-  const { buffer } = await generarPlanillaPdf(sessionId);
-  const stored = await guardarDocumentoSesion(
-    sessionId,
-    buffer,
-    "documento-firmado.pdf",
-  );
+  for (const documento of documentos) {
+    if (!documento.originalPath) continue;
 
-  await db.signingSession.update({
-    where: { id: sessionId },
-    data: { documentoFirmadoPdf: stored.relativePath },
-  });
+    try {
+      const { buffer } = await generarPlanillaPdf(sessionId, documento.originalPath);
+      const stored = await guardarDocumentoFirmado(sessionId, documento.id, buffer);
 
-  return stored.relativePath;
+      await db.sessionDocument.update({
+        where: { id: documento.id },
+        data: { signedPath: stored.relativePath },
+      });
+    } catch (error) {
+      console.error(
+        `[generarYGuardarDocumentosFirmados] Error en documento ${documento.id} de sesión ${sessionId}:`,
+        error,
+      );
+    }
+  }
 }

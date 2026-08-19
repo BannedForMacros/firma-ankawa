@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile, unlink } from "node:fs/promises";
 import path from "node:path";
 import { sha256Hex } from "@/lib/crypto";
 
@@ -7,7 +7,7 @@ import { sha256Hex } from "@/lib/crypto";
  * Fuera de /public a propósito: las firmas son evidencia y se sirven solo
  * a través de una ruta autenticada (/api/firmas/...).
  *
- * Migración a S3: reemplazar estas dos funciones por PutObject/GetObject
+ * Migración a S3: reemplazar estas funciones por PutObject/GetObject
  * conservando la misma clave relativa `{sessionId}/{fileName}`.
  */
 
@@ -58,30 +58,75 @@ export async function leerImagenFirma(relativePath: string): Promise<Buffer> {
   return readFile(resolved);
 }
 
-/** Persiste un PDF adjunto a la sesión. */
-export async function guardarDocumentoSesion(
-  sessionId: string,
-  pdfBuffer: Buffer,
-  fileName = "documento.pdf",
-): Promise<StoredDocument> {
-  const sha256 = sha256Hex(pdfBuffer);
-  const dir = path.join(DOCUMENTS_ROOT, sessionId);
-  await mkdir(dir, { recursive: true });
-
-  await writeFile(path.join(dir, fileName), pdfBuffer);
-
-  return {
-    relativePath: `${sessionId}/${fileName}`,
-    sha256,
-    bytes: pdfBuffer.byteLength,
-  };
-}
-
-/** Lee un PDF adjunto a la sesión. */
-export async function leerDocumentoSesion(relativePath: string): Promise<Buffer> {
+/** Resuelve y valida una ruta relativa dentro del almacén de documentos. */
+function resolverRutaDocumento(relativePath: string): string {
   const resolved = path.resolve(DOCUMENTS_ROOT, relativePath);
   if (!resolved.startsWith(DOCUMENTS_ROOT + path.sep)) {
     throw new Error("Ruta de documento inválida.");
   }
-  return readFile(resolved);
+  return resolved;
+}
+
+/** Lee un PDF adjunto a la sesión. */
+export async function leerDocumentoSesion(relativePath: string): Promise<Buffer> {
+  return readFile(resolverRutaDocumento(relativePath));
+}
+
+/** Elimina un PDF del almacén local. No lanza si el archivo no existe. */
+export async function eliminarDocumentoSesion(relativePath: string | null | undefined): Promise<void> {
+  if (!relativePath) return;
+  try {
+    await unlink(resolverRutaDocumento(relativePath));
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException)?.code;
+    if (code !== "ENOENT") throw error;
+  }
+}
+
+/**
+ * Persiste el PDF original de un documento de sesión.
+ * Estructura: /storage/documentos/{sessionId}/{docId}/original.pdf
+ */
+export async function guardarDocumentoOriginal(
+  sessionId: string,
+  docId: string,
+  pdfBuffer: Buffer,
+  originalName: string,
+): Promise<StoredDocument & { originalName: string }> {
+  const sha256 = sha256Hex(pdfBuffer);
+  const dir = path.join(DOCUMENTS_ROOT, sessionId, docId);
+  await mkdir(dir, { recursive: true });
+
+  const relativePath = path.join(sessionId, docId, "original.pdf");
+  await writeFile(path.join(DOCUMENTS_ROOT, relativePath), pdfBuffer);
+
+  return {
+    relativePath,
+    sha256,
+    bytes: pdfBuffer.byteLength,
+    originalName,
+  };
+}
+
+/**
+ * Persiste el PDF firmado de un documento de sesión.
+ * Estructura: /storage/documentos/{sessionId}/{docId}/firmado.pdf
+ */
+export async function guardarDocumentoFirmado(
+  sessionId: string,
+  docId: string,
+  pdfBuffer: Buffer,
+): Promise<StoredDocument> {
+  const sha256 = sha256Hex(pdfBuffer);
+  const dir = path.join(DOCUMENTS_ROOT, sessionId, docId);
+  await mkdir(dir, { recursive: true });
+
+  const relativePath = path.join(sessionId, docId, "firmado.pdf");
+  await writeFile(path.join(DOCUMENTS_ROOT, relativePath), pdfBuffer);
+
+  return {
+    relativePath,
+    sha256,
+    bytes: pdfBuffer.byteLength,
+  };
 }

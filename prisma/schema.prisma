@@ -64,9 +64,7 @@ model SigningSession {
   fechaAudiencia DateTime
   sede           String
   modalidad      Modalidad     @default(PRESENCIAL)
-  status              SessionStatus @default(OPEN)
-  documentoPdf        String?
-  documentoFirmadoPdf String?
+  status SessionStatus @default(OPEN)
 
   createdById String
   createdBy   User      @relation("SesionCreadaPor", fields: [createdById], references: [id])
@@ -77,10 +75,27 @@ model SigningSession {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  signers Signer[]
+  signers   Signer[]
+  documents SessionDocument[]
 
   @@index([status, createdAt])
   @@map("signing_sessions")
+}
+
+model SessionDocument {
+  id           String @id @default(cuid())
+  sessionId    String @map("session_id")
+  session      SigningSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  originalName String @map("original_name")
+  originalPath String @unique @map("original_path")
+  signedPath   String? @map("signed_path")
+  orden        Int    @default(0)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([sessionId, orden])
+  @@map("session_documents")
 }
 
 model Signer {

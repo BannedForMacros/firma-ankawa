@@ -1,22 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireUser } from "@/auth";
 import { crearSesionSchema } from "@/lib/validation";
-import { crearSesion, listarSesiones } from "@/server/session-service";
-import { guardarDocumentoSesion } from "@/lib/storage";
+import { crearSesion } from "@/server/session-service";
+import { subirDocumentosSesion } from "@/server/session-service";
 import { clientInfo } from "@/lib/request";
 
 export const runtime = "nodejs";
-
-export async function GET(): Promise<NextResponse> {
-  try {
-    await requireUser();
-  } catch {
-    return NextResponse.json({ error: "No autorizado." }, { status: 401 });
-  }
-
-  const sesiones = await listarSesiones();
-  return NextResponse.json({ sesiones }, { status: 200 });
-}
 
 function validarPdf(file: File): { ok: true } | { ok: false; error: string } {
   if (file.type !== "application/pdf") {
@@ -26,6 +15,18 @@ function validarPdf(file: File): { ok: true } | { ok: false; error: string } {
     return { ok: false, error: "El PDF no puede superar los 20 MB." };
   }
   return { ok: true };
+}
+
+export async function GET(): Promise<NextResponse> {
+  try {
+    await requireUser();
+  } catch {
+    return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  }
+
+  const { listarSesiones } = await import("@/server/session-service");
+  const sesiones = await listarSesiones();
+  return NextResponse.json({ sesiones }, { status: 200 });
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -62,16 +63,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const documento = formData.get("documento");
-  let pdfBuffer: Buffer | null = null;
-  if (documento instanceof File && documento.size > 0) {
-    const validacion = validarPdf(documento);
-    if (!validacion.ok) {
-      return NextResponse.json({ error: validacion.error }, { status: 400 });
+  // Recolecta documentos adjuntos: soporta campo único "documento" o múltiple "documentos".
+  const entradas = formData.getAll("documentos").concat(formData.get("documento") ?? []);
+  const archivos: File[] = [];
+  for (const entrada of entradas) {
+    if (entrada instanceof File && entrada.size > 0) {
+      const validacion = validarPdf(entrada);
+      if (!validacion.ok) {
+        return NextResponse.json({ error: validacion.error }, { status: 400 });
+      }
+      archivos.push(entrada);
     }
-    const bytes = await documento.arrayBuffer();
-    pdfBuffer = Buffer.from(bytes);
-    if (pdfBuffer.length === 0 || pdfBuffer.subarray(0, 4).toString("ascii") !== "%PDF") {
+  }
+
+  for (const archivo of archivos) {
+    const bytes = await archivo.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    if (buffer.length === 0 || buffer.subarray(0, 4).toString("ascii") !== "%PDF") {
       return NextResponse.json({ error: "El archivo no es un PDF válido." }, { status: 400 });
     }
   }
@@ -79,19 +87,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const { ip, userAgent } = clientInfo(req);
   const sesion = await crearSesion(parsed.data, { id: user.id, ip, userAgent });
 
-  let documentoPdf: string | null = null;
-  if (pdfBuffer) {
-    const stored = await guardarDocumentoSesion(sesion.id, pdfBuffer);
-    documentoPdf = stored.relativePath;
-  }
-
-  // Actualizamos la sesión con la ruta del documento si se subió.
-  if (documentoPdf) {
-    const { db } = await import("@/lib/db");
-    await db.signingSession.update({
-      where: { id: sesion.id },
-      data: { documentoPdf },
-    });
+  if (archivos.length > 0) {
+    const buffers = await Promise.all(
+      archivos.map(async (archivo) => ({
+        nombre: archivo.name,
+        buffer: Buffer.from(await archivo.arrayBuffer()),
+      })),
+    );
+    await subirDocumentosSesion(sesion.id, buffers);
   }
 
   return NextResponse.json({ sesion }, { status: 201 });

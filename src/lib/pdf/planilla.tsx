@@ -207,6 +207,7 @@ function bufferADataUri(buffer: Buffer): string {
 /** Genera la planilla PDF oficial de la sesión indicada. */
 export async function generarPlanillaPdf(
   sessionId: string,
+  documentoOriginalPath?: string,
 ): Promise<{ buffer: Buffer; code: string }> {
   const sesion = await obtenerSesionParaPlanilla(sessionId);
   if (!sesion) {
@@ -228,12 +229,12 @@ export async function generarPlanillaPdf(
   );
 
   // Si no hay documento adjunto, se devuelve la planilla de firmas sola.
-  if (!sesion.documentoPdf) {
+  if (!documentoOriginalPath) {
     return { buffer: Buffer.from(planillaBuffer), code: sesion.code };
   }
 
   try {
-    const documentoOriginal = await leerDocumentoSesion(sesion.documentoPdf);
+    const documentoOriginal = await leerDocumentoSesion(documentoOriginalPath);
     const pdfDoc = await PDFDocument.load(documentoOriginal);
 
     const margenInferior = 40;

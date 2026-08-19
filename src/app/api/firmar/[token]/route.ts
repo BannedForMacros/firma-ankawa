@@ -49,8 +49,7 @@ export async function GET(
     sede: encontrada.sede,
     modalidad: encontrada.modalidad,
     status: encontrada.status,
-    documentoPdf: encontrada.documentoPdf,
-    documentoFirmadoPdf: encontrada.documentoFirmadoPdf,
+    documentos: encontrada.documentos,
   };
 
   return NextResponse.json({ sesion }, { status: 200 });

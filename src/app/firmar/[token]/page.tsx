@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { CalendarDays, FileText } from "lucide-react";
 import { obtenerSesionPublicaPorToken } from "@/server/session-service";
 import { fechaCorta } from "@/lib/dates";
-import type { SesionPublicaDto } from "@/lib/types";
+import type { DocumentoSesionDto, SesionPublicaDto } from "@/lib/types";
 import { AnkawaLogo } from "@/components/brand/logo";
 import { LogoFondo } from "@/components/brand/logo-fondo";
 import { AlaPoligonal } from "@/components/brand/ala-poligonal";
@@ -19,6 +19,26 @@ interface PageProps {
   params: Promise<{ token: string }>;
 }
 
+function DocumentosFirmados({ documentos }: { documentos: DocumentoSesionDto[] }) {
+  return (
+    <ul className="mt-2 flex flex-wrap gap-2">
+      {documentos.map((doc) => (
+        <li key={doc.id} className="flex items-center gap-1.5 rounded-full bg-guinda-50 px-2.5 py-1">
+          <FileText className="h-3.5 w-3.5 text-guinda-500" strokeWidth={1.5} aria-hidden="true" />
+          <a
+            href={doc.signedPath ? `/api/documentos/${doc.signedPath}` : `/api/documentos/${doc.originalPath}`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-semibold text-guinda-600 hover:text-guinda-700"
+          >
+            {doc.originalName}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default async function FirmarPage({ params }: PageProps) {
   const { token } = await params;
   const encontrada = await obtenerSesionPublicaPorToken(token);
@@ -32,15 +52,19 @@ export default async function FirmarPage({ params }: PageProps) {
     sede: encontrada.sede,
     modalidad: encontrada.modalidad,
     status: encontrada.status,
-    documentoPdf: encontrada.documentoPdf,
-    documentoFirmadoPdf: encontrada.documentoFirmadoPdf,
+    documentos: encontrada.documentos,
   };
 
+  const primerDocumento = sesion.documentos[0];
   const documentoUrl =
-    sesion.status === "CLOSED" && sesion.documentoFirmadoPdf
-      ? `/api/documentos/${sesion.documentoFirmadoPdf}`
-      : sesion.documentoPdf
-        ? `/api/documentos/${sesion.documentoPdf}`
+    sesion.status === "CLOSED"
+      ? primerDocumento?.signedPath
+        ? `/api/documentos/${primerDocumento.signedPath}`
+        : primerDocumento?.originalPath
+          ? `/api/documentos/${primerDocumento.originalPath}`
+          : null
+      : primerDocumento?.originalPath
+        ? `/api/documentos/${primerDocumento.originalPath}`
         : null;
 
   return (
@@ -94,6 +118,13 @@ export default async function FirmarPage({ params }: PageProps) {
               </li>
             ) : null}
           </ul>
+
+          {sesion.documentos.length > 1 ? (
+            <div className="mt-3 rounded-[var(--radius-brand)] border border-humo-200 bg-humo-50 p-3">
+              <p className="mb-1.5 text-xs font-semibold text-ciruela-700">Documentos adjuntos ({sesion.documentos.length})</p>
+              <DocumentosFirmados documentos={sesion.documentos} />
+            </div>
+          ) : null}
         </section>
 
         <div className="mt-4 sm:mt-5">

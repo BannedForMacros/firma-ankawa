@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Plus, FileUp } from "lucide-react";
+import { Plus, FileUp, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -34,7 +34,8 @@ const CAMPOS: ReadonlyArray<Campo> = [
   "documento",
 ];
 
-const MAX_DOCUMENT_SIZE = 8 * 1024 * 1024; // 8 MB
+const MAX_DOCUMENT_SIZE = 20 * 1024 * 1024; // 20 MB por archivo
+const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50 MB total
 
 interface NuevaSesionDialogProps {
   /** Variante visual del botón que abre el diálogo. */
@@ -53,7 +54,7 @@ export function NuevaSesionDialog({ triggerVariant = "primary" }: NuevaSesionDia
   const [fechaAudiencia, setFechaAudiencia] = React.useState("");
   const [sede, setSede] = React.useState("Sede Cusco");
   const [modalidad, setModalidad] = React.useState<ModalidadAudiencia>("PRESENCIAL");
-  const [documento, setDocumento] = React.useState<File | null>(null);
+  const [documentos, setDocumentos] = React.useState<File[]>([]);
   const [errores, setErrores] = React.useState<ErroresCampos>({});
   const [errorGeneral, setErrorGeneral] = React.useState<string | null>(null);
   const [enviando, setEnviando] = React.useState(false);
@@ -64,7 +65,7 @@ export function NuevaSesionDialog({ triggerVariant = "primary" }: NuevaSesionDia
     setFechaAudiencia("");
     setSede("Sede Cusco");
     setModalidad("PRESENCIAL");
-    setDocumento(null);
+    setDocumentos([]);
     setErrores({});
     setErrorGeneral(null);
   };
@@ -76,9 +77,23 @@ export function NuevaSesionDialog({ triggerVariant = "primary" }: NuevaSesionDia
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    const file = event.target.files?.[0] ?? null;
-    setDocumento(file);
+    const files = Array.from(event.target.files ?? []).filter(
+      (file) => file.type === "application/pdf"
+    );
+    setDocumentos((prev) => {
+      const nuevos = [...prev];
+      for (const file of files) {
+        if (!nuevos.some((d) => d.name === file.name && d.size === file.size)) {
+          nuevos.push(file);
+        }
+      }
+      return nuevos;
+    });
     setErrores((prev) => ({ ...prev, documento: undefined }));
+  };
+
+  const handleQuitarDocumento = (index: number): void => {
+    setDocumentos((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (
@@ -111,16 +126,26 @@ export function NuevaSesionDialog({ triggerVariant = "primary" }: NuevaSesionDia
       return;
     }
 
-    if (!documento) {
-      setErrores({ documento: "Debe adjuntar el documento PDF que se va a firmar." });
+    if (documentos.length === 0) {
+      setErrores({ documento: "Debe adjuntar al menos un documento PDF que se va a firmar." });
       return;
     }
-    if (documento.type !== "application/pdf") {
-      setErrores({ documento: "Solo se permite un archivo PDF." });
+
+    const invalido = documentos.find((d) => d.type !== "application/pdf");
+    if (invalido) {
+      setErrores({ documento: `Solo se permiten archivos PDF (${invalido.name}).` });
       return;
     }
-    if (documento.size > MAX_DOCUMENT_SIZE) {
-      setErrores({ documento: "El PDF no puede superar los 8 MB." });
+
+    const totalSize = documentos.reduce((sum, d) => sum + d.size, 0);
+    if (totalSize > MAX_TOTAL_SIZE) {
+      setErrores({ documento: "El total de los PDFs no puede superar los 50 MB." });
+      return;
+    }
+
+    const muyGrande = documentos.find((d) => d.size > MAX_DOCUMENT_SIZE);
+    if (muyGrande) {
+      setErrores({ documento: `El archivo ${muyGrande.name} supera los 20 MB.` });
       return;
     }
 
@@ -133,7 +158,9 @@ export function NuevaSesionDialog({ triggerVariant = "primary" }: NuevaSesionDia
       formData.append("fechaAudiencia", parsed.data.fechaAudiencia.toISOString());
       formData.append("sede", parsed.data.sede);
       formData.append("modalidad", parsed.data.modalidad);
-      formData.append("documento", documento);
+      for (const documento of documentos) {
+        formData.append("documentos", documento);
+      }
 
       const res = await fetch("/api/sesiones", {
         method: "POST",
@@ -292,11 +319,12 @@ export function NuevaSesionDialog({ triggerVariant = "primary" }: NuevaSesionDia
           </div>
 
           <div className="grid gap-1.5">
-            <Label htmlFor="ns-documento">Documento PDF a firmar</Label>
+            <Label htmlFor="ns-documento">Documentos PDF a firmar</Label>
             <Input
               id="ns-documento"
               type="file"
               accept="application/pdf"
+              multiple
               onChange={handleFileChange}
               aria-invalid={errores.documento ? true : undefined}
               aria-describedby={errores.documento ? "ns-documento-error" : undefined}
@@ -304,8 +332,28 @@ export function NuevaSesionDialog({ triggerVariant = "primary" }: NuevaSesionDia
             />
             <p className="text-xs text-ciruela-400">
               <FileUp className="mr-1 inline h-3 w-3" aria-hidden="true" />
-              Adjunte el PDF original. Las firmas se agregarán al final del documento.
+              Adjunte uno o más PDFs originales. Las firmas se agregarán al final de cada documento.
             </p>
+            {documentos.length > 0 ? (
+              <ul className="mt-2 space-y-1">
+                {documentos.map((d, i) => (
+                  <li
+                    key={`${d.name}-${i}`}
+                    className="flex items-center justify-between gap-2 rounded-md bg-humo-100 px-2 py-1.5 text-xs text-ciruela-700"
+                  >
+                    <span className="truncate">{d.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleQuitarDocumento(i)}
+                      className="shrink-0 rounded p-0.5 text-ciruela-400 hover:bg-humo-200 hover:text-guinda-600"
+                      aria-label={`Quitar ${d.name}`}
+                    >
+                      <X className="h-3.5 w-3.5" strokeWidth={1.5} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             {errores.documento ? (
               <p id="ns-documento-error" className="text-xs text-guinda-600">
                 {errores.documento}

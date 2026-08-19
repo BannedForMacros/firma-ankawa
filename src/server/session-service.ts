@@ -1,11 +1,15 @@
-import type { Prisma, SigningSession, Signer } from "@prisma/client";
+import type { Prisma, SigningSession, Signer, SessionDocument } from "@prisma/client";
 import { db } from "@/lib/db";
 import { generateSessionToken, generateShortCode } from "@/lib/crypto";
 import { registrarAuditoria } from "@/lib/audit";
-import { guardarDocumentoSesion } from "@/lib/storage";
-import { generarYGuardarDocumentoFirmado } from "@/server/documento-final-service";
+import {
+  guardarDocumentoOriginal,
+  eliminarDocumentoSesion as eliminarDocumentoStorage,
+} from "@/lib/storage";
+import { generarYGuardarDocumentosFirmados } from "@/server/documento-final-service";
 import type { CrearSesionInput } from "@/lib/validation";
 import type {
+  DocumentoSesionDto,
   FirmaResumenDto,
   SesionDetalleDto,
   SesionPublicaDto,
@@ -41,6 +45,18 @@ function toFirmaDto(firma: Signer): FirmaResumenDto {
     signedAt: firma.signedAt.toISOString(),
     imageUrl: `/api/firmas/${firma.imagePath}`,
     imageSha256: firma.imageSha256,
+  };
+}
+
+function toDocumentoDto(doc: SessionDocument): DocumentoSesionDto {
+  return {
+    id: doc.id,
+    sessionId: doc.sessionId,
+    originalName: doc.originalName,
+    originalPath: doc.originalPath,
+    signedPath: doc.signedPath,
+    orden: doc.orden,
+    createdAt: doc.createdAt.toISOString(),
   };
 }
 
@@ -108,6 +124,7 @@ export async function obtenerDetalleSesion(
       createdBy: { select: { nombre: true } },
       closedBy: { select: { nombre: true } },
       signers: { orderBy: { signedAt: "asc" } },
+      documents: { orderBy: { orden: "asc" } },
     },
   });
   if (!sesion) return null;
@@ -118,8 +135,7 @@ export async function obtenerDetalleSesion(
     closedAt: sesion.closedAt?.toISOString() ?? null,
     closedByNombre: sesion.closedBy?.nombre ?? null,
     createdByNombre: sesion.createdBy.nombre,
-    documentoPdf: sesion.documentoPdf,
-    documentoFirmadoPdf: sesion.documentoFirmadoPdf,
+    documentos: sesion.documents.map(toDocumentoDto),
     firmas: sesion.signers.map(toFirmaDto),
   };
 }
@@ -155,9 +171,9 @@ export async function cerrarSesion(
   // fuera de la transacción para no bloquear la sesión mientras se renderiza
   // el PDF; si falla, el cierre ya está hecho y se puede reintentar desde la UI.
   try {
-    await generarYGuardarDocumentoFirmado(id);
+    await generarYGuardarDocumentosFirmados(id);
   } catch (error) {
-    console.error(`[cerrarSesion] No se pudo generar el documento final para ${id}:`, error);
+    console.error(`[cerrarSesion] No se pudieron generar los documentos finales para ${id}:`, error);
   }
 
   await registrarAuditoria({
@@ -174,7 +190,10 @@ export async function cerrarSesion(
 export async function obtenerSesionPublicaPorToken(
   token: string,
 ): Promise<(SesionPublicaDto & { id: string }) | null> {
-  const sesion = await db.signingSession.findUnique({ where: { token } });
+  const sesion = await db.signingSession.findUnique({
+    where: { token },
+    include: { documents: { orderBy: { orden: "asc" } } },
+  });
   if (!sesion) return null;
   return {
     id: sesion.id,
@@ -185,8 +204,7 @@ export async function obtenerSesionPublicaPorToken(
     sede: sesion.sede,
     modalidad: sesion.modalidad,
     status: sesion.status,
-    documentoPdf: sesion.documentoPdf,
-    documentoFirmadoPdf: sesion.documentoFirmadoPdf,
+    documentos: sesion.documents.map(toDocumentoDto),
   };
 }
 
@@ -246,16 +264,90 @@ export async function obtenerSesionParaPlanilla(id: string): Promise<
   });
 }
 
+/**
+ * Sube uno o más documentos PDF a una sesión abierta.
+ */
+export async function subirDocumentosSesion(
+  sessionId: string,
+  archivos: Array<{ nombre: string; buffer: Buffer }>,
+): Promise<DocumentoSesionDto[]> {
+  if (archivos.length === 0) return [];
+
+  const sesion = await db.signingSession.findUnique({
+    where: { id: sessionId },
+    select: { status: true },
+  });
+  if (!sesion) throw new ReglaDeNegocioError("La sesión no existe.", 404);
+  if (sesion.status === "CLOSED") {
+    throw new ReglaDeNegocioError("No se pueden subir documentos a una sesión cerrada.", 409);
+  }
+
+  const ultimo = await db.sessionDocument.findFirst({
+    where: { sessionId },
+    orderBy: { orden: "desc" },
+    select: { orden: true },
+  });
+  let orden = (ultimo?.orden ?? -1) + 1;
+
+  const resultados: DocumentoSesionDto[] = [];
+
+  for (const archivo of archivos) {
+    const docId = crypto.randomUUID();
+    const stored = await guardarDocumentoOriginal(sessionId, docId, archivo.buffer, archivo.nombre);
+    const doc = await db.sessionDocument.create({
+      data: {
+        id: docId,
+        sessionId,
+        originalName: archivo.nombre,
+        originalPath: stored.relativePath,
+        orden,
+      },
+    });
+    resultados.push(toDocumentoDto(doc));
+    orden++;
+  }
+
+  return resultados;
+}
+
+/**
+ * Elimina un documento de una sesión abierta, incluyendo sus archivos
+ * originales y firmados si existen.
+ */
+export async function eliminarDocumentoSesion(
+  sessionId: string,
+  docId: string,
+): Promise<void> {
+  const sesion = await db.signingSession.findUnique({
+    where: { id: sessionId },
+    select: { status: true },
+  });
+  if (!sesion) throw new ReglaDeNegocioError("La sesión no existe.", 404);
+  if (sesion.status === "CLOSED") {
+    throw new ReglaDeNegocioError("No se pueden eliminar documentos de una sesión cerrada.", 409);
+  }
+
+  const doc = await db.sessionDocument.findFirst({
+    where: { id: docId, sessionId },
+  });
+  if (!doc) throw new ReglaDeNegocioError("El documento no existe.", 404);
+
+  await eliminarDocumentoStorage(doc.originalPath);
+  await eliminarDocumentoStorage(doc.signedPath);
+  await db.sessionDocument.delete({ where: { id: docId } });
+}
+
+/**
+ * Conservado para compatibilidad con el endpoint PATCH existente.
+ * Ahora sube un nuevo documento en lugar de reemplazar el único.
+ */
 export async function actualizarDocumentoSesion(
   sessionId: string,
   pdfBuffer: Buffer,
-): Promise<string> {
-  const stored = await guardarDocumentoSesion(sessionId, pdfBuffer);
-  await db.signingSession.update({
-    where: { id: sessionId },
-    data: { documentoPdf: stored.relativePath },
-  });
-  return stored.relativePath;
+  nombre = "documento.pdf",
+): Promise<DocumentoSesionDto> {
+  const docs = await subirDocumentosSesion(sessionId, [{ nombre, buffer: pdfBuffer }]);
+  return docs[0];
 }
 
 export type { Prisma };

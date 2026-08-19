@@ -4,6 +4,7 @@ import { registrarAuditoria } from "@/lib/audit";
 import { clientInfo } from "@/lib/request";
 import { generarPlanillaPdf } from "@/lib/pdf/planilla";
 import { ReglaDeNegocioError } from "@/server/session-service";
+import { db } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -24,10 +25,23 @@ export async function GET(
   const { id } = await params;
   const url = new URL(req.url);
   const modo = url.searchParams.get("modo");
+  const documentoId = url.searchParams.get("documentoId");
   const esPreview = modo === "preview";
 
+  let documentoOriginalPath: string | undefined;
+  if (documentoId) {
+    const documento = await db.sessionDocument.findFirst({
+      where: { id: documentoId, sessionId: id },
+      select: { originalPath: true },
+    });
+    if (!documento) {
+      return NextResponse.json({ error: "El documento no existe en esta sesión." }, { status: 404 });
+    }
+    documentoOriginalPath = documento.originalPath;
+  }
+
   try {
-    const { buffer, code } = await generarPlanillaPdf(id);
+    const { buffer, code } = await generarPlanillaPdf(id, documentoOriginalPath);
 
     const { ip, userAgent } = clientInfo(req);
     await registrarAuditoria({
@@ -38,7 +52,7 @@ export async function GET(
       entityId: id,
       ip,
       userAgent,
-      metadata: { code, modo: esPreview ? "preview" : "download" },
+      metadata: { code, modo: esPreview ? "preview" : "download", documentoId },
     });
 
     return new NextResponse(new Uint8Array(buffer), {

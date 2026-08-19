@@ -39,13 +39,22 @@ export interface FirmaResumenDto {
   imageSha256: string;
 }
 
+export interface DocumentoSesionDto {
+  id: string;
+  sessionId: string;
+  originalName: string;
+  originalPath: string;
+  signedPath: string | null;
+  orden: number;
+  createdAt: string; // ISO
+}
+
 export interface SesionDetalleDto extends SesionResumenDto {
   token: string;
   closedAt: string | null;
   closedByNombre: string | null;
   createdByNombre: string;
-  documentoPdf: string | null;
-  documentoFirmadoPdf: string | null;
+  documentos: DocumentoSesionDto[];
   firmas: FirmaResumenDto[];
 }
 
@@ -58,8 +67,7 @@ export interface SesionPublicaDto {
   sede: string;
   modalidad: ModalidadAudiencia;
   status: EstadoSesion;
-  documentoPdf: string | null;
-  documentoFirmadoPdf: string | null;
+  documentos: DocumentoSesionDto[];
 }
 
 export interface IdentidadDniDto {
