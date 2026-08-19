@@ -1,23 +1,18 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { CalendarDays, FileText, MapPin } from "lucide-react";
+import { CalendarDays, FileText } from "lucide-react";
 import { obtenerSesionPublicaPorToken } from "@/server/session-service";
 import { fechaCorta } from "@/lib/dates";
-import type { ModalidadAudiencia, SesionPublicaDto } from "@/lib/types";
+import type { SesionPublicaDto } from "@/lib/types";
 import { AnkawaLogo } from "@/components/brand/logo";
 import { LogoFondo } from "@/components/brand/logo-fondo";
 import { AlaPoligonal } from "@/components/brand/ala-poligonal";
 import { FlujoFirma } from "@/components/firmar/flujo-firma";
 import { SesionCerrada } from "@/components/firmar/sesion-cerrada";
+import { RevisarDocumentos } from "@/components/firmar/revisar-documentos";
 
 export const metadata: Metadata = {
-  title: "Firma del acta de audiencia",
-};
-
-const MODALIDAD_LEGIBLE: Record<ModalidadAudiencia, string> = {
-  PRESENCIAL: "Presencial",
-  VIRTUAL: "Virtual",
-  MIXTA: "Mixta",
+  title: "Firma del documento",
 };
 
 interface PageProps {
@@ -37,7 +32,12 @@ export default async function FirmarPage({ params }: PageProps) {
     sede: encontrada.sede,
     modalidad: encontrada.modalidad,
     status: encontrada.status,
+    documentoPdf: encontrada.documentoPdf,
   };
+
+  const documentoUrl = sesion.documentoPdf
+    ? `/api/documentos/${sesion.documentoPdf}`
+    : null;
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-humo-100">
@@ -64,11 +64,11 @@ export default async function FirmarPage({ params }: PageProps) {
 
         {/* Datos de la audiencia: compactos y sin tarjeta pesada */}
         <section
-          aria-label="Datos de la audiencia"
+          aria-label="Datos de la sesión"
           className="rounded-[var(--radius-brand)] border border-humo-200 bg-white p-4"
         >
           <p className="titulo-institucional text-[0.55rem] text-guinda-600">
-            Acta de audiencia — Sesión {sesion.code}
+            Documento a firmar — Sesión {sesion.code}
           </p>
           <h1 className="mt-1 text-balance font-[family-name:var(--font-display)] text-lg font-bold leading-snug tracking-tight text-ciruela-700">
             {sesion.asunto}
@@ -84,11 +84,11 @@ export default async function FirmarPage({ params }: PageProps) {
               <span className="sr-only">Fecha:</span>
               {fechaCorta(new Date(sesion.fechaAudiencia))}
             </li>
-            <li className="flex items-center gap-1.5 rounded-full bg-humo-100 px-2.5 py-1">
-              <MapPin className="h-3.5 w-3.5 text-guinda-500" strokeWidth={1.5} aria-hidden="true" />
-              <span className="sr-only">Sede:</span>
-              {sesion.sede} · {MODALIDAD_LEGIBLE[sesion.modalidad]}
-            </li>
+            {documentoUrl ? (
+              <li className="flex items-center gap-1.5 rounded-full bg-guinda-50 px-2.5 py-1">
+                <RevisarDocumentos url={documentoUrl} />
+              </li>
+            ) : null}
           </ul>
         </section>
 

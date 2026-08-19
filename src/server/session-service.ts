@@ -118,6 +118,7 @@ export async function obtenerDetalleSesion(
     closedAt: sesion.closedAt?.toISOString() ?? null,
     closedByNombre: sesion.closedBy?.nombre ?? null,
     createdByNombre: sesion.createdBy.nombre,
+    documentoPdf: sesion.documentoPdf,
     firmas: sesion.signers.map(toFirmaDto),
   };
 }
@@ -174,6 +175,7 @@ export async function obtenerSesionPublicaPorToken(
     sede: sesion.sede,
     modalidad: sesion.modalidad,
     status: sesion.status,
+    documentoPdf: sesion.documentoPdf,
   };
 }
 

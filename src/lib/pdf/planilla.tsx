@@ -9,29 +9,30 @@ import {
   View,
   renderToBuffer,
 } from "@react-pdf/renderer";
+import { PDFDocument } from "pdf-lib";
 import type { Signer } from "@prisma/client";
 import {
   ReglaDeNegocioError,
   obtenerSesionParaPlanilla,
 } from "@/server/session-service";
-import { leerImagenFirma } from "@/lib/storage";
+import { leerImagenFirma, leerDocumentoSesion } from "@/lib/storage";
 import { fechaHoraLegal, leyendaConformidad } from "@/lib/dates";
 
 /**
  * Planilla de firmas oficial en PDF.
  *
- * Decisión tipográfica: se usa Helvetica (y Helvetica-Bold), la fuente
- * estándar incorporada de @react-pdf/renderer. No se registran fuentes
- * externas para mantener el PDF liviano y la generación determinista.
+ * Si la sesión tiene un documento PDF adjunto, la planilla se anexa al final
+ * de ese documento; de lo contrario, se genera un PDF de una sola página con
+ * la planilla de firmas.
  */
 
 const NEGRO = "#000000";
 
 const estilos = StyleSheet.create({
   pagina: {
-    paddingTop: 56,
-    paddingBottom: 56,
-    paddingHorizontal: 56,
+    paddingTop: 64,
+    paddingBottom: 64,
+    paddingHorizontal: 64,
     fontFamily: "Helvetica",
     fontSize: 10,
     color: NEGRO,
@@ -40,7 +41,7 @@ const estilos = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    marginBottom: 14,
+    marginBottom: 20,
   },
   logo: {
     height: 48,
@@ -52,17 +53,10 @@ const estilos = StyleSheet.create({
     fontSize: 12,
     flexShrink: 1,
   },
-  datoLinea: {
-    fontSize: 10,
-    marginBottom: 2,
-  },
-  datoEtiqueta: {
-    fontFamily: "Helvetica-Bold",
-  },
   leyenda: {
     fontSize: 10,
-    marginTop: 10,
-    marginBottom: 14,
+    marginTop: 12,
+    marginBottom: 18,
   },
   sinFirmas: {
     fontSize: 10,
@@ -84,25 +78,25 @@ const estilos = StyleSheet.create({
   },
   celda: {
     width: "50%",
-    height: 150,
+    height: 140,
     borderRightWidth: 1,
     borderBottomWidth: 1,
     borderRightColor: NEGRO,
     borderBottomColor: NEGRO,
     borderRightStyle: "solid",
     borderBottomStyle: "solid",
-    paddingHorizontal: 8,
-    paddingTop: 6,
-    paddingBottom: 6,
+    paddingHorizontal: 10,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   zonaFirma: {
-    height: 74,
+    height: 70,
     alignItems: "center",
     justifyContent: "center",
   },
   imagenFirma: {
-    maxHeight: 70,
-    maxWidth: "85%",
+    maxHeight: 66,
+    maxWidth: "90%",
     objectFit: "contain",
   },
   lineaFirma: {
@@ -121,13 +115,21 @@ const estilos = StyleSheet.create({
     textAlign: "center",
     marginBottom: 1,
   },
+  textoEntidad: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 7,
+    textAlign: "center",
+    marginBottom: 1,
+  },
   pie: {
-    marginTop: 16,
+    position: "absolute",
+    bottom: 24,
+    left: 64,
+    right: 64,
   },
   pieSesion: {
-    fontSize: 8,
-    fontFamily: "Helvetica-Bold",
-    marginBottom: 4,
+    fontSize: 7,
+    marginBottom: 2,
   },
   pieHash: {
     fontSize: 6,
@@ -157,10 +159,13 @@ function CeldaFirma({ firma, imagenDataUri }: FirmaConImagen) {
       <View style={estilos.lineaFirma} />
       <View style={estilos.bloqueDatos}>
         {firma.entidad ? (
-          <Text style={estilos.textoDato}>{`ENTIDAD: ${firma.entidad}`.toUpperCase()}</Text>
+          <Text style={estilos.textoEntidad}>{firma.entidad.toUpperCase()}</Text>
         ) : null}
-        <Text style={estilos.textoDato}>{`NOMBRE: ${firma.displayName}`.toUpperCase()}</Text>
-        <Text style={estilos.textoDato}>{`CARGO: ${firma.cargo}`.toUpperCase()}</Text>
+        <Text style={estilos.textoDato}>{firma.displayName.toUpperCase()}</Text>
+        {firma.cargo ? (
+          <Text style={estilos.textoEntidad}>{firma.cargo.toUpperCase()}</Text>
+        ) : null}
+        <Text style={estilos.textoEntidad}>{`DNI: ${firma.docNumber}`}</Text>
       </View>
     </View>
   );
@@ -203,15 +208,6 @@ function PlanillaDocumento({
           </Text>
         </View>
 
-        <Text style={estilos.datoLinea}>
-          <Text style={estilos.datoEtiqueta}>Asunto: </Text>
-          {asunto}
-        </Text>
-        <Text style={estilos.datoLinea}>
-          <Text style={estilos.datoEtiqueta}>Expediente: </Text>
-          {expediente}
-        </Text>
-
         <Text style={estilos.leyenda}>{leyendaConformidad(fechaAudiencia)}</Text>
 
         {firmasConImagen.length === 0 ? (
@@ -245,11 +241,11 @@ function PlanillaDocumento({
 
         <View style={estilos.pie}>
           <Text style={estilos.pieSesion}>
-            {`Sesión ${code} — Generado el ${fechaHoraLegal(new Date())}`}
+            {`Sesión ${code} — ${asunto} — Expediente ${expediente} — Generado el ${fechaHoraLegal(new Date())}`}
           </Text>
           {firmasConImagen.map(({ firma }) => (
             <Text key={firma.id} style={estilos.pieHash}>
-              {`${firma.displayName}: SHA-256 ${firma.imageSha256}`}
+              {`${firma.displayName} · DNI ${firma.docNumber} · SHA-256 ${firma.imageSha256}`}
             </Text>
           ))}
         </View>
@@ -283,7 +279,7 @@ export async function generarPlanillaPdf(
     })),
   );
 
-  const buffer = await renderToBuffer(
+  const planillaBuffer = await renderToBuffer(
     <PlanillaDocumento
       logoDataUri={logoDataUri}
       asunto={sesion.asunto}
@@ -294,5 +290,37 @@ export async function generarPlanillaPdf(
     />,
   );
 
-  return { buffer: Buffer.from(buffer), code: sesion.code };
+  // Si hay un documento adjunto, fusionamos el PDF original con la página de firmas.
+  if (sesion.documentoPdf) {
+    try {
+      const documentoOriginal = await leerDocumentoSesion(sesion.documentoPdf);
+      const merged = await mergePdfs(documentoOriginal, Buffer.from(planillaBuffer));
+      return { buffer: merged, code: sesion.code };
+    } catch (error) {
+      console.warn(
+        "[planilla] No se pudo fusionar el documento adjunto; se generará solo la planilla.",
+        error,
+      );
+    }
+  }
+
+  return { buffer: Buffer.from(planillaBuffer), code: sesion.code };
+}
+
+async function mergePdfs(originalBuffer: Buffer, signaturesBuffer: Buffer): Promise<Buffer> {
+  const [originalPdf, signaturesPdf] = await Promise.all([
+    PDFDocument.load(originalBuffer),
+    PDFDocument.load(signaturesBuffer),
+  ]);
+
+  const copiedPages = await originalPdf.copyPages(
+    signaturesPdf,
+    signaturesPdf.getPageIndices(),
+  );
+  for (const page of copiedPages) {
+    originalPdf.addPage(page);
+  }
+
+  const mergedBytes = await originalPdf.save();
+  return Buffer.from(mergedBytes);
 }

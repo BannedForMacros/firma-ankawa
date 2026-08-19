@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Plus, FileUp } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { crearSesionSchema } from "@/lib/validation";
 import type { ModalidadAudiencia, SesionResumenDto } from "@/lib/types";
 
-type Campo = "asunto" | "expediente" | "fechaAudiencia" | "sede" | "modalidad";
+type Campo = "asunto" | "expediente" | "fechaAudiencia" | "sede" | "modalidad" | "documento";
 type ErroresCampos = Partial<Record<Campo, string>>;
 
 const CAMPOS: ReadonlyArray<Campo> = [
@@ -31,7 +31,10 @@ const CAMPOS: ReadonlyArray<Campo> = [
   "fechaAudiencia",
   "sede",
   "modalidad",
+  "documento",
 ];
+
+const MAX_DOCUMENT_SIZE = 8 * 1024 * 1024; // 8 MB
 
 interface NuevaSesionDialogProps {
   /** Variante visual del botón que abre el diálogo. */
@@ -50,6 +53,7 @@ export function NuevaSesionDialog({ triggerVariant = "primary" }: NuevaSesionDia
   const [fechaAudiencia, setFechaAudiencia] = React.useState("");
   const [sede, setSede] = React.useState("Sede Cusco");
   const [modalidad, setModalidad] = React.useState<ModalidadAudiencia>("PRESENCIAL");
+  const [documento, setDocumento] = React.useState<File | null>(null);
   const [errores, setErrores] = React.useState<ErroresCampos>({});
   const [errorGeneral, setErrorGeneral] = React.useState<string | null>(null);
   const [enviando, setEnviando] = React.useState(false);
@@ -60,6 +64,7 @@ export function NuevaSesionDialog({ triggerVariant = "primary" }: NuevaSesionDia
     setFechaAudiencia("");
     setSede("Sede Cusco");
     setModalidad("PRESENCIAL");
+    setDocumento(null);
     setErrores({});
     setErrorGeneral(null);
   };
@@ -68,6 +73,12 @@ export function NuevaSesionDialog({ triggerVariant = "primary" }: NuevaSesionDia
     if (enviando) return;
     setOpen(siguiente);
     if (!siguiente) reiniciarFormulario();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    const file = event.target.files?.[0] ?? null;
+    setDocumento(file);
+    setErrores((prev) => ({ ...prev, documento: undefined }));
   };
 
   const handleSubmit = async (
@@ -100,13 +111,33 @@ export function NuevaSesionDialog({ triggerVariant = "primary" }: NuevaSesionDia
       return;
     }
 
+    if (!documento) {
+      setErrores({ documento: "Debe adjuntar el documento PDF que se va a firmar." });
+      return;
+    }
+    if (documento.type !== "application/pdf") {
+      setErrores({ documento: "Solo se permite un archivo PDF." });
+      return;
+    }
+    if (documento.size > MAX_DOCUMENT_SIZE) {
+      setErrores({ documento: "El PDF no puede superar los 8 MB." });
+      return;
+    }
+
     setErrores({});
     setEnviando(true);
     try {
+      const formData = new FormData();
+      formData.append("asunto", parsed.data.asunto);
+      formData.append("expediente", parsed.data.expediente);
+      formData.append("fechaAudiencia", parsed.data.fechaAudiencia.toISOString());
+      formData.append("sede", parsed.data.sede);
+      formData.append("modalidad", parsed.data.modalidad);
+      formData.append("documento", documento);
+
       const res = await fetch("/api/sesiones", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed.data),
+        body: formData,
       });
       const data = (await res.json().catch(() => null)) as
         | { sesion: SesionResumenDto }
@@ -256,6 +287,28 @@ export function NuevaSesionDialog({ triggerVariant = "primary" }: NuevaSesionDia
             {errores.sede ? (
               <p id="ns-sede-error" className="text-xs text-guinda-600">
                 {errores.sede}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="ns-documento">Documento PDF a firmar</Label>
+            <Input
+              id="ns-documento"
+              type="file"
+              accept="application/pdf"
+              onChange={handleFileChange}
+              aria-invalid={errores.documento ? true : undefined}
+              aria-describedby={errores.documento ? "ns-documento-error" : undefined}
+              disabled={enviando}
+            />
+            <p className="text-xs text-ciruela-400">
+              <FileUp className="mr-1 inline h-3 w-3" aria-hidden="true" />
+              Adjunte el PDF original. Las firmas se agregarán al final del documento.
+            </p>
+            {errores.documento ? (
+              <p id="ns-documento-error" className="text-xs text-guinda-600">
+                {errores.documento}
               </p>
             ) : null}
           </div>
