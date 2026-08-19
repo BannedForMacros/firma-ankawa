@@ -1,5 +1,3 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import {
   PDFDocument,
   PDFPage,
@@ -10,7 +8,7 @@ import {
 } from "pdf-lib";
 import type { Signer } from "@prisma/client";
 import { leerImagenFirma } from "@/lib/storage";
-import { fechaHoraLegal } from "@/lib/dates";
+import { leyendaConformidad } from "@/lib/dates";
 
 const NEGRO = rgb(0, 0, 0);
 const GRIS = rgb(0.35, 0.35, 0.35);
@@ -18,13 +16,6 @@ const GRIS = rgb(0.35, 0.35, 0.35);
 interface FirmaConImagen {
   firma: Signer;
   imagen: PDFImage;
-}
-
-interface DatosBloque {
-  code: string;
-  asunto: string;
-  expediente: string;
-  fechaAudiencia: Date;
 }
 
 function ajustarTamanoTexto(
@@ -69,7 +60,7 @@ export async function calcularAlturaBloque(
 ): Promise<number> {
   const filas = Math.ceil(numFirmas / 2);
   const filasHeight = filas * 110 + Math.max(0, filas - 1) * 8;
-  return 36 + 14 + filasHeight + 24 + 8; // header + leyenda + cajas + pie + padding
+  return filasHeight + 30; // cajas + espacio para leyenda inferior
 }
 
 export async function dibujarBloqueFirmas(
@@ -80,13 +71,7 @@ export async function dibujarBloqueFirmas(
   blockWidth: number,
   blockHeight: number,
   firmas: Signer[],
-  datos: DatosBloque,
 ): Promise<void> {
-  const logoBuffer = await readFile(
-    path.join(process.cwd(), "public", "brand", "logo.png"),
-  );
-  const logo = await pdfDoc.embedPng(logoBuffer);
-
   const firmasConImagen: FirmaConImagen[] = await Promise.all(
     firmas.map(async (firma) => ({
       firma,
@@ -104,37 +89,15 @@ export async function dibujarBloqueFirmas(
 
   let cursorY = startY + blockHeight - 8;
 
-  // Encabezado: logo + título
-  const logoH = 24;
-  const logoW = (logo.width / logo.height) * logoH;
-  page.drawImage(logo, {
-    x: startX,
-    y: cursorY - logoH,
-    width: logoW,
-    height: logoH,
-  });
-
-  const titulo = "Centro de Arbitraje y Resolución de Disputas CARD - ANKAWA INTL";
-  const tituloSize = ajustarTamanoTexto(titulo, helveticaBold, 9, blockWidth - logoW - gap);
-  page.drawText(titulo, {
-    x: startX + logoW + gap,
-    y: cursorY - logoH / 2 - tituloSize / 3,
-    size: tituloSize,
-    font: helveticaBold,
-  });
-
-  cursorY -= 36;
-
-  // Leyenda
-  const leyenda = `Por la presente dejo constancia de mi conformidad con el contenido del documento suscrito en la fecha ${fechaHoraLegal(datos.fechaAudiencia)}.`;
-  const leyendaSize = ajustarTamanoTexto(leyenda, helvetica, 8, blockWidth);
+  // Leyenda superior
+  const leyenda = leyendaConformidad(new Date());
+  const leyendaSize = ajustarTamanoTexto(leyenda, helvetica, 9, blockWidth);
   page.drawText(leyenda, {
     x: startX,
     y: cursorY,
     size: leyendaSize,
     font: helvetica,
   });
-
   cursorY -= 18;
 
   // Cajas de firma
@@ -234,15 +197,5 @@ export async function dibujarBloqueFirmas(
     }
 
     cursorY -= boxHeight + gap;
-  }
-
-  // Pie
-  const pieY = startY + 6;
-  const pieText = `Sesión ${datos.code} — ${datos.asunto} — Expediente ${datos.expediente} — Generado el ${fechaHoraLegal(new Date())}`;
-  dibujarTextoCentrado(page, pieText, startX, pieY + 10, blockWidth, 6, helvetica, GRIS);
-
-  for (const item of firmasConImagen) {
-    const hashText = `${item.firma.displayName} · DNI ${item.firma.docNumber} · SHA-256 ${item.firma.imageSha256}`;
-    dibujarTextoCentrado(page, hashText, startX, pieY, blockWidth, 5, helvetica, GRIS);
   }
 }

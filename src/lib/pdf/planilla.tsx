@@ -1,5 +1,3 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import {
   Document,
   Image,
@@ -16,7 +14,7 @@ import {
   obtenerSesionParaPlanilla,
 } from "@/server/session-service";
 import { leerImagenFirma, leerDocumentoSesion } from "@/lib/storage";
-import { fechaHoraLegal, leyendaConformidad } from "@/lib/dates";
+import { leyendaConformidad } from "@/lib/dates";
 import { calcularEspacioUltimaPagina } from "@/lib/pdf/page-space";
 import {
   calcularAlturaBloque,
@@ -41,27 +39,6 @@ const estilos = StyleSheet.create({
     fontFamily: "Helvetica",
     fontSize: 10,
     color: NEGRO,
-  },
-  encabezado: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 20,
-  },
-  logo: {
-    height: 48,
-    width: 68,
-    objectFit: "contain",
-  },
-  tituloCentro: {
-    fontFamily: "Helvetica-Bold",
-    fontSize: 12,
-    flexShrink: 1,
-  },
-  leyenda: {
-    fontSize: 10,
-    marginTop: 12,
-    marginBottom: 18,
   },
   sinFirmas: {
     fontSize: 10,
@@ -126,19 +103,10 @@ const estilos = StyleSheet.create({
     textAlign: "center",
     marginBottom: 1,
   },
-  pie: {
-    position: "absolute",
-    bottom: 24,
-    left: 64,
-    right: 64,
-  },
-  pieSesion: {
-    fontSize: 7,
-    marginBottom: 2,
-  },
-  pieHash: {
-    fontSize: 6,
-    marginBottom: 1,
+  leyendaSuperior: {
+    fontSize: 10,
+    marginBottom: 14,
+    textAlign: "left",
   },
 });
 
@@ -181,22 +149,11 @@ function CeldaVacia() {
 }
 
 interface PlanillaDocProps {
-  logoDataUri: string;
-  asunto: string;
-  expediente: string;
-  fechaAudiencia: Date;
   code: string;
   firmasConImagen: FirmaConImagen[];
 }
 
-function PlanillaDocumento({
-  logoDataUri,
-  asunto,
-  expediente,
-  fechaAudiencia,
-  code,
-  firmasConImagen,
-}: PlanillaDocProps) {
+function PlanillaDocumento({ code, firmasConImagen }: PlanillaDocProps) {
   const filas = agruparEnFilas(firmasConImagen);
 
   return (
@@ -206,14 +163,9 @@ function PlanillaDocumento({
       language="es-PE"
     >
       <Page size="A4" style={estilos.pagina}>
-        <View style={estilos.encabezado}>
-          <Image src={logoDataUri} style={estilos.logo} />
-          <Text style={estilos.tituloCentro}>
-            Centro de Arbitraje y Resolución de Disputas CARD - ANKAWA INTL
-          </Text>
-        </View>
-
-        <Text style={estilos.leyenda}>{leyendaConformidad(fechaAudiencia)}</Text>
+        <Text style={estilos.leyendaSuperior}>
+          {leyendaConformidad(new Date())}
+        </Text>
 
         {firmasConImagen.length === 0 ? (
           <Text style={estilos.sinFirmas}>
@@ -243,17 +195,6 @@ function PlanillaDocumento({
             ))}
           </View>
         )}
-
-        <View style={estilos.pie}>
-          <Text style={estilos.pieSesion}>
-            {`Sesión ${code} — ${asunto} — Expediente ${expediente} — Generado el ${fechaHoraLegal(new Date())}`}
-          </Text>
-          {firmasConImagen.map(({ firma }) => (
-            <Text key={firma.id} style={estilos.pieHash}>
-              {`${firma.displayName} · DNI ${firma.docNumber} · SHA-256 ${firma.imageSha256}`}
-            </Text>
-          ))}
-        </View>
       </Page>
     </Document>
   );
@@ -272,11 +213,6 @@ export async function generarPlanillaPdf(
     throw new ReglaDeNegocioError("La sesión no existe.", 404);
   }
 
-  const logoBuffer = await readFile(
-    path.join(process.cwd(), "public", "brand", "logo.png"),
-  );
-  const logoDataUri = bufferADataUri(logoBuffer);
-
   const firmasConImagen: FirmaConImagen[] = await Promise.all(
     sesion.signers.map(async (firma) => ({
       firma,
@@ -286,10 +222,6 @@ export async function generarPlanillaPdf(
 
   const planillaBuffer = await renderToBuffer(
     <PlanillaDocumento
-      logoDataUri={logoDataUri}
-      asunto={sesion.asunto}
-      expediente={sesion.expediente}
-      fechaAudiencia={sesion.fechaAudiencia}
       code={sesion.code}
       firmasConImagen={firmasConImagen}
     />,
@@ -331,12 +263,6 @@ export async function generarPlanillaPdf(
         blockWidth,
         blockHeight,
         sesion.signers,
-        {
-          code: sesion.code,
-          asunto: sesion.asunto,
-          expediente: sesion.expediente,
-          fechaAudiencia: sesion.fechaAudiencia,
-        },
       );
 
       const mergedBytes = await pdfDoc.save();

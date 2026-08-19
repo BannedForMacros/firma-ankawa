@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, X } from "lucide-react";
+import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -35,20 +35,9 @@ export function PrevisualizarDocumento({
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] max-w-4xl p-0">
         <DialogHeader className="p-4 pb-0">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-base font-semibold text-ciruela-700">
-              Vista previa del documento firmado
-            </DialogTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setAbierto(false)}
-              aria-label="Cerrar"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <DialogTitle className="text-base font-semibold text-ciruela-700">
+            Vista previa del documento firmado
+          </DialogTitle>
         </DialogHeader>
         <div className="p-4 pt-2">
           <div className="relative h-[70vh] w-full overflow-hidden rounded-[var(--radius-brand)] border border-humo-300 bg-humo-100">
