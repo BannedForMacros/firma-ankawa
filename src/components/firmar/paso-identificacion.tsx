@@ -2,13 +2,11 @@
 
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { ShieldCheck } from "lucide-react";
-import { dniSchema, rucSchema } from "@/lib/validation";
-import type { CatalogoItemDto, IdentidadDto, TipoDocumento } from "@/lib/types";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { dniSchema } from "@/lib/validation";
+import type { CatalogoItemDto, IdentidadDto } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { VerifiedBadge } from "@/components/brand/verified-badge";
@@ -52,7 +50,6 @@ async function leerMensajeDeError(res: Response): Promise<string> {
 export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps) {
   const idBase = useId();
 
-  const [docType, setDocType] = useState<TipoDocumento>("DNI");
   const [numero, setNumero] = useState("");
   const [consultando, setConsultando] = useState(false);
   const [resultado, setResultado] = useState<IdentidadDto | null>(null);
@@ -60,8 +57,8 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
   const [manual, setManual] = useState(false);
   const [nombreManual, setNombreManual] = useState("");
 
-  const [repNombre, setRepNombre] = useState("");
-  const [repDni, setRepDni] = useState("");
+  const [conEntidad, setConEntidad] = useState(false);
+  const [entidad, setEntidad] = useState("");
   const [cargo, setCargo] = useState("");
   const [parte, setParte] = useState("");
 
@@ -109,24 +106,7 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
     [partes]
   );
 
-  const schemaNumero = docType === "DNI" ? dniSchema : rucSchema;
-  const validacionNumero = schemaNumero.safeParse(numero);
-  const numeroValido = validacionNumero.success;
-  const mensajeNumero =
-    numero.length > 0 && !numeroValido ? validacionNumero.error.issues[0]?.message ?? null : null;
-
-  const repDniValido = dniSchema.safeParse(repDni).success;
-
-  const cambiarTab = useCallback((valor: string) => {
-    setDocType(valor === "RUC" ? "RUC" : "DNI");
-    setNumero("");
-    setResultado(null);
-    setErrorConsulta(null);
-    setManual(false);
-    setNombreManual("");
-    setRepNombre("");
-    setRepDni("");
-  }, []);
+  const numeroValido = dniSchema.safeParse(numero).success;
 
   const cambiarNumero = useCallback((valor: string) => {
     setNumero(valor.replace(/\D/g, ""));
@@ -145,7 +125,7 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
       const res = await fetch("/api/identidad", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ docType, docNumber: numero, sessionToken: token }),
+        body: JSON.stringify({ docType: "DNI", docNumber: numero, sessionToken: token }),
       });
       if (!res.ok) {
         setErrorConsulta(await leerMensajeDeError(res));
@@ -162,52 +142,36 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
     } finally {
       setConsultando(false);
     }
-  }, [numeroValido, consultando, docType, numero, token]);
+  }, [numeroValido, consultando, numero, token]);
 
   const displayName = useMemo(() => {
-    if (resultado) {
-      return resultado.tipo === "DNI" ? resultado.nombreCompleto : resultado.razonSocial;
-    }
+    if (resultado?.tipo === "DNI") return resultado.nombreCompleto;
     return manual ? nombreManual.trim() : "";
   }, [resultado, manual, nombreManual]);
 
   const identificado = resultado !== null || manual;
-  const requiereRep = docType === "RUC" && identificado;
-  const rucNoHabilitado = resultado?.tipo === "RUC" && !resultado.habilitado;
 
   const identidadCompleta = useMemo<IdentidadFirmante | null>(() => {
+    const entidadFinal = conEntidad ? entidad.trim() : "";
+    const entidadValida = !conEntidad || entidadFinal.length >= 2;
     const completo =
       identificado &&
       numeroValido &&
       displayName.length >= 3 &&
       cargo.trim().length >= 2 &&
       parte.trim().length >= 2 &&
-      (!requiereRep || (repNombre.trim().length >= 3 && repDniValido));
+      entidadValida;
     if (!completo) return null;
     return {
-      docType,
+      docType: "DNI",
       docNumber: numero,
       displayName,
-      ...(requiereRep ? { repNombre: repNombre.trim(), repDni: repDni.trim() } : {}),
+      ...(conEntidad && entidadFinal ? { entidad: entidadFinal } : {}),
       cargo: cargo.trim(),
       parte: parte.trim(),
       verified: resultado !== null,
-      ...(resultado?.tipo === "RUC" ? { habilitado: resultado.habilitado } : {}),
     };
-  }, [
-    docType,
-    numero,
-    numeroValido,
-    identificado,
-    displayName,
-    cargo,
-    parte,
-    requiereRep,
-    repNombre,
-    repDni,
-    repDniValido,
-    resultado,
-  ]);
+  }, [identificado, numeroValido, displayName, conEntidad, entidad, cargo, parte, resultado, numero]);
 
   useEffect(() => {
     onChange(identidadCompleta);
@@ -218,71 +182,25 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
       <div>
         <h2 className="text-lg font-semibold text-ciruela-700">Identifíquese</h2>
         <p className="mt-0.5 text-sm text-ciruela-400">
-          Complete sus datos para continuar con la firma.
+          Ingrese sus datos para continuar con la firma.
         </p>
       </div>
 
-      <Tabs value={docType} onValueChange={cambiarTab}>
-        <TabsList className="grid h-auto w-full grid-cols-2 gap-0 rounded-none bg-transparent p-0">
-          <TabsTrigger
-            value="DNI"
-            className="min-h-11 rounded-none border-b-2 border-humo-200 px-3 py-2.5 text-sm data-[state=active]:border-guinda-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-          >
-            Persona natural
-          </TabsTrigger>
-          <TabsTrigger
-            value="RUC"
-            className="min-h-11 rounded-none border-b-2 border-humo-200 px-3 py-2.5 text-sm data-[state=active]:border-guinda-500 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-          >
-            Persona jurídica
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor={`${idBase}-numero`}>{docType === "DNI" ? "DNI" : "RUC"}</Label>
+        <Label htmlFor={`${idBase}-dni`}>DNI</Label>
         <Input
-          id={`${idBase}-numero`}
+          id={`${idBase}-dni`}
           inputMode="numeric"
           autoComplete="off"
-          maxLength={docType === "DNI" ? 8 : 11}
-          placeholder={docType === "DNI" ? "8 dígitos" : "11 dígitos"}
+          maxLength={8}
+          placeholder="8 dígitos"
           value={numero}
           onChange={(e) => cambiarNumero(e.target.value)}
-          aria-invalid={mensajeNumero ? true : undefined}
-          aria-describedby={mensajeNumero ? `${idBase}-numero-error` : undefined}
           className="min-h-11"
         />
-        {mensajeNumero ? (
-          <p id={`${idBase}-numero-error`} className="text-xs text-guinda-600">
-            {mensajeNumero}
-          </p>
+        {!numeroValido && numero.length > 0 ? (
+          <p className="text-xs text-guinda-600">El DNI debe tener 8 dígitos.</p>
         ) : null}
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <SelectOInput
-          id={`${idBase}-cargo`}
-          label="Cargo o rol"
-          options={opcionesCargo}
-          value={cargo}
-          onChange={setCargo}
-          placeholder="Seleccione un cargo"
-          placeholderInput="Escriba su cargo"
-          otroLabel="Otro cargo"
-          disabled={cargandoCatalogos}
-        />
-        <SelectOInput
-          id={`${idBase}-parte`}
-          label="Parte que representa"
-          options={opcionesParte}
-          value={parte}
-          onChange={setParte}
-          placeholder="Seleccione una parte"
-          placeholderInput="Escriba la parte"
-          otroLabel="Otra parte"
-          disabled={cargandoCatalogos}
-        />
       </div>
 
       <Button
@@ -332,47 +250,17 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
         </div>
       ) : null}
 
-      {resultado?.tipo === "RUC" ? (
-        <div className="flex flex-col gap-3">
-          <div className="rounded-[var(--radius-brand)] border border-humo-200 bg-humo-50 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-medium text-ciruela-400">Razón social verificada</p>
-              <VerifiedBadge verified source="SUNAT" />
-            </div>
-            <p className="mt-1 text-sm font-semibold text-berenjena">{resultado.razonSocial}</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <Badge variant={resultado.estado === "ACTIVO" ? "success" : "warning"}>
-                {resultado.estado}
-              </Badge>
-              <Badge variant={resultado.condicion === "HABIDO" ? "success" : "warning"}>
-                {resultado.condicion}
-              </Badge>
-            </div>
-          </div>
-          {rucNoHabilitado ? (
-            <Alert variant="warning">
-              <AlertDescription>
-                SUNAT reporta este RUC como {resultado.estado} / {resultado.condicion}. Puede
-                continuar, pero quedará registrado.
-              </AlertDescription>
-            </Alert>
-          ) : null}
-        </div>
-      ) : null}
-
       {manual ? (
         <div className="flex flex-col gap-1.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <Label htmlFor={`${idBase}-nombre-manual`}>
-              {docType === "DNI" ? "Nombre completo" : "Razón social"}
-            </Label>
+            <Label htmlFor={`${idBase}-nombre-manual`}>Nombre completo</Label>
             <VerifiedBadge verified={false} />
           </div>
           <Input
             id={`${idBase}-nombre-manual`}
             value={nombreManual}
             onChange={(e) => setNombreManual(e.target.value)}
-            placeholder={docType === "DNI" ? "Tal como figura en su DNI" : "Tal como figura ante SUNAT"}
+            placeholder="Tal como figura en su DNI"
             aria-describedby={`${idBase}-nota-manual`}
             className="min-h-11"
           />
@@ -382,42 +270,84 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
         </div>
       ) : null}
 
-      {requiereRep ? (
-        <fieldset className="flex flex-col gap-3 rounded-[var(--radius-brand)] border border-humo-300 p-4">
-          <legend className="px-1 text-sm font-medium text-ciruela-700">Representante</legend>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor={`${idBase}-rep-nombre`}>Nombre completo</Label>
-            <Input
-              id={`${idBase}-rep-nombre`}
-              value={repNombre}
-              onChange={(e) => setRepNombre(e.target.value)}
-              placeholder="Ej.: Juan Pérez Quispe"
-              autoComplete="name"
-              className="min-h-11"
+      {identificado ? (
+        <div className="anim-subir flex flex-col gap-4 border-t border-humo-200 pt-5">
+          <div>
+            <h3 className="text-sm font-semibold text-ciruela-700">¿En qué calidad firma?</h3>
+            <p className="mt-0.5 text-xs leading-relaxed text-ciruela-400">
+              Estos datos aparecerán bajo su firma en el acta.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <p className="text-sm font-medium text-ciruela-700">¿Firma en representación de una entidad?</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setConEntidad(true)}
+                className={
+                  conEntidad
+                    ? "rounded-[var(--radius-brand)] border border-guinda-300 bg-guinda-50 px-3 py-2 text-sm font-medium text-guinda-700"
+                    : "rounded-[var(--radius-brand)] border border-humo-300 bg-white px-3 py-2 text-sm font-medium text-ciruela-500 transition-colors hover:border-ciruela-300 hover:text-ciruela-700"
+                }
+              >
+                Sí
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConEntidad(false);
+                  setEntidad("");
+                }}
+                className={
+                  !conEntidad
+                    ? "rounded-[var(--radius-brand)] border border-guinda-300 bg-guinda-50 px-3 py-2 text-sm font-medium text-guinda-700"
+                    : "rounded-[var(--radius-brand)] border border-humo-300 bg-white px-3 py-2 text-sm font-medium text-ciruela-500 transition-colors hover:border-ciruela-300 hover:text-ciruela-700"
+                }
+              >
+                No
+              </button>
+            </div>
+          </div>
+
+          {conEntidad ? (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor={`${idBase}-entidad`}>Entidad que representa</Label>
+              <Input
+                id={`${idBase}-entidad`}
+                value={entidad}
+                onChange={(e) => setEntidad(e.target.value)}
+                placeholder="Ej.: Municipalidad Provincial de Lima"
+                className="min-h-11"
+              />
+            </div>
+          ) : null}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SelectOInput
+              id={`${idBase}-cargo`}
+              label="Cargo o rol"
+              options={opcionesCargo}
+              value={cargo}
+              onChange={setCargo}
+              placeholder="Seleccione un cargo"
+              placeholderInput="Escriba su cargo"
+              otroLabel="Otro cargo"
+              disabled={cargandoCatalogos}
+            />
+            <SelectOInput
+              id={`${idBase}-parte`}
+              label="Parte que representa"
+              options={opcionesParte}
+              value={parte}
+              onChange={setParte}
+              placeholder="Seleccione una parte"
+              placeholderInput="Escriba la parte"
+              otroLabel="Otra parte"
+              disabled={cargandoCatalogos}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor={`${idBase}-rep-dni`}>DNI del representante</Label>
-            <Input
-              id={`${idBase}-rep-dni`}
-              inputMode="numeric"
-              maxLength={8}
-              value={repDni}
-              onChange={(e) => setRepDni(e.target.value.replace(/\D/g, ""))}
-              placeholder="8 dígitos"
-              aria-invalid={repDni.length > 0 && !repDniValido ? true : undefined}
-              aria-describedby={
-                repDni.length > 0 && !repDniValido ? `${idBase}-rep-dni-error` : undefined
-              }
-              className="min-h-11"
-            />
-            {repDni.length > 0 && !repDniValido ? (
-              <p id={`${idBase}-rep-dni-error`} className="text-xs text-guinda-600">
-                El DNI debe tener 8 dígitos.
-              </p>
-            ) : null}
-          </div>
-        </fieldset>
+        </div>
       ) : null}
     </div>
   );

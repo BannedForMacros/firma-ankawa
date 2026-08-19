@@ -17,13 +17,10 @@ export interface IdentidadFirmante {
   docType: TipoDocumento;
   docNumber: string;
   displayName: string;
-  repNombre?: string;
-  repDni?: string;
+  entidad?: string;
   cargo: string;
   parte: string;
   verified: boolean;
-  /** Solo RUC: true si SUNAT reporta ACTIVO y HABIDO. */
-  habilitado?: boolean;
 }
 
 /** Firma capturada en el paso 2. */
@@ -101,8 +98,7 @@ export function FlujoFirma({ sesion, token }: FlujoFirmaProps) {
           docType: identidad.docType,
           docNumber: identidad.docNumber,
           displayName: identidad.displayName,
-          ...(identidad.repNombre ? { repNombre: identidad.repNombre } : {}),
-          ...(identidad.repDni ? { repDni: identidad.repDni } : {}),
+          ...(identidad.entidad ? { entidad: identidad.entidad } : {}),
           cargo: identidad.cargo,
           parte: identidad.parte,
           verified: identidad.verified,

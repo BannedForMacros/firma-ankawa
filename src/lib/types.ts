@@ -28,6 +28,7 @@ export interface FirmaResumenDto {
   docType: TipoDocumento;
   docNumberMasked: string;
   displayName: string;
+  entidad: string | null;
   repNombre: string | null;
   cargo: string;
   parte: string;

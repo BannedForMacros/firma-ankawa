@@ -45,19 +45,13 @@ export function PasoConfirmacion({
       <div className="rounded-[var(--radius-brand)] border border-humo-300 bg-humo-50 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-semibold text-ciruela-700">{identidad.displayName}</p>
-          <VerifiedBadge
-            verified={identidad.verified}
-            source={identidad.docType === "DNI" ? "RENIEC" : "SUNAT"}
-          />
+          <VerifiedBadge verified={identidad.verified} source="RENIEC" />
         </div>
-        <p className="text-xs text-ciruela-400">
-          {identidad.docType} {identidad.docNumber}
-        </p>
+        <p className="text-xs text-ciruela-400">DNI {identidad.docNumber}</p>
 
-        {identidad.repNombre ? (
+        {identidad.entidad ? (
           <p className="mt-2 text-xs text-ciruela-400">
-            Representante: <span className="text-berenjena">{identidad.repNombre}</span>
-            {identidad.repDni ? ` — DNI ${identidad.repDni}` : null}
+            Entidad: <span className="text-berenjena">{identidad.entidad}</span>
           </p>
         ) : null}
 

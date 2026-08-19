@@ -61,19 +61,16 @@ export function SignerCard({ firma, orden, resaltada = false, className }: Signe
 
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-berenjena">{firma.displayName}</p>
+        {firma.entidad ? (
+          <p className="truncate text-xs text-ciruela-400">Entidad: {firma.entidad}</p>
+        ) : null}
         <p className="truncate text-xs text-ciruela-400">
           {firma.docType} {firma.docNumberMasked} · {firma.cargo} · {firma.parte}
         </p>
-        {firma.docType === "RUC" && firma.repNombre ? (
-          <p className="truncate text-xs text-ciruela-400">Rep.: {firma.repNombre}</p>
-        ) : null}
       </div>
 
       <div className="flex shrink-0 flex-col items-end gap-1">
-        <VerifiedBadge
-          verified={firma.verified}
-          source={firma.docType === "DNI" ? "RENIEC" : "SUNAT"}
-        />
+        <VerifiedBadge verified={firma.verified} source="RENIEC" />
         <time dateTime={firma.signedAt} className="text-xs tabular-nums text-ciruela-400">
           {hora}
         </time>

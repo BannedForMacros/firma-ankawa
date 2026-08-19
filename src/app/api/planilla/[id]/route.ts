@@ -22,6 +22,9 @@ export async function GET(
   }
 
   const { id } = await params;
+  const url = new URL(req.url);
+  const modo = url.searchParams.get("modo");
+  const esPreview = modo === "preview";
 
   try {
     const { buffer, code } = await generarPlanillaPdf(id);
@@ -35,14 +38,16 @@ export async function GET(
       entityId: id,
       ip,
       userAgent,
-      metadata: { code },
+      metadata: { code, modo: esPreview ? "preview" : "download" },
     });
 
     return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="planilla-${code}.pdf"`,
+        "Content-Disposition": esPreview
+          ? `inline; filename="planilla-${code}.pdf"`
+          : `attachment; filename="planilla-${code}.pdf"`,
         "Cache-Control": "private, no-store",
       },
     });

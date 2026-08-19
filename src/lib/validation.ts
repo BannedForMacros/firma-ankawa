@@ -41,6 +41,7 @@ export const guardarFirmaSchema = z
     docType: z.enum(["DNI", "RUC"]),
     docNumber: z.string().trim(),
     displayName: z.string().trim().min(3, "Ingrese el nombre o razón social.").max(200),
+    entidad: z.string().trim().min(2).max(200).optional(),
     repNombre: z.string().trim().min(3).max(200).optional(),
     repDni: dniSchema.optional(),
     cargo: z.string().trim().min(2, "Ingrese el cargo o rol en la audiencia.").max(120),

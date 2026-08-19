@@ -33,6 +33,7 @@ function toFirmaDto(firma: Signer): FirmaResumenDto {
     docType: firma.docType,
     docNumberMasked: maskDocNumber(firma.docNumber),
     displayName: firma.displayName,
+    entidad: firma.entidad,
     repNombre: firma.repNombre,
     cargo: firma.cargo,
     parte: firma.parte,

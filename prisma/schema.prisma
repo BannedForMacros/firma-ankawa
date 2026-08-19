@@ -90,6 +90,8 @@ model Signer {
   docNumber String
   /// Nombre completo (DNI) o razón social (RUC), verificado o declarado
   displayName String
+  /// Solo cuando firma en representación de una entidad distinta a su persona
+  entidad   String?
   /// Solo RUC: nombre del representante que firma físicamente
   repNombre String?
   /// Solo RUC: DNI del representante

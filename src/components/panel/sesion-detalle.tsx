@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, FileDown, MapPin, PenLine, Users, XOctagon } from "lucide-react";
+import { ArrowLeft, CalendarDays, Eye, FileDown, MapPin, PenLine, Users, XOctagon } from "lucide-react";
 
 import type { ModalidadAudiencia, SesionDetalleDto } from "@/lib/types";
 import { fechaCorta, fechaHoraLegal } from "@/lib/dates";
@@ -215,7 +215,16 @@ export function SesionDetalle({ inicial, qrUrl }: SesionDetalleProps) {
                   )}
                 >
                   <FileDown aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />
-                  Descargar planilla PDF
+                  Descargar planilla
+                </a>
+                <a
+                  href={`/api/planilla/${sesion.id}?modo=preview`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={cn(buttonVariants({ variant: "outline", size: "md" }))}
+                >
+                  <Eye aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />
+                  Previsualizar
                 </a>
               </div>
               {abierta ? (

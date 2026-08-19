@@ -149,12 +149,6 @@ function agruparEnFilas(items: FirmaConImagen[]): FirmaConImagen[][] {
 }
 
 function CeldaFirma({ firma, imagenDataUri }: FirmaConImagen) {
-  const esRuc = firma.docType === "RUC";
-  const cargo = esRuc && firma.repNombre
-    ? `${firma.cargo} — REP.: ${firma.repNombre}`
-    : firma.cargo;
-  const nombre = esRuc ? (firma.repNombre ?? firma.displayName) : firma.displayName;
-
   return (
     <View style={estilos.celda}>
       <View style={estilos.zonaFirma}>
@@ -162,9 +156,11 @@ function CeldaFirma({ firma, imagenDataUri }: FirmaConImagen) {
       </View>
       <View style={estilos.lineaFirma} />
       <View style={estilos.bloqueDatos}>
-        <Text style={estilos.textoDato}>{`ENTIDAD: ${firma.displayName}`.toUpperCase()}</Text>
-        <Text style={estilos.textoDato}>{`CARGO: ${cargo}`.toUpperCase()}</Text>
-        <Text style={estilos.textoDato}>{`NOMBRE: ${nombre}`.toUpperCase()}</Text>
+        {firma.entidad ? (
+          <Text style={estilos.textoDato}>{`ENTIDAD: ${firma.entidad}`.toUpperCase()}</Text>
+        ) : null}
+        <Text style={estilos.textoDato}>{`NOMBRE: ${firma.displayName}`.toUpperCase()}</Text>
+        <Text style={estilos.textoDato}>{`CARGO: ${firma.cargo}`.toUpperCase()}</Text>
         <Text style={estilos.textoDato}>{`PARTE: ${firma.parte}`.toUpperCase()}</Text>
       </View>
     </View>

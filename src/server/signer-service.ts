@@ -105,6 +105,7 @@ export async function guardarFirma(
           docType: input.docType,
           docNumber: input.docNumber,
           displayName: input.displayName,
+          entidad: input.entidad ?? null,
           repNombre: input.repNombre ?? null,
           repDni: input.repDni ?? null,
           cargo: input.cargo,
