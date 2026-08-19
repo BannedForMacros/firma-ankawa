@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, Eye, FileDown, FileText, MapPin, PenLine, Users, XOctagon } from "lucide-react";
+import { ArrowLeft, CalendarDays, FileDown, FileText, MapPin, PenLine, UploadCloud, Users, XOctagon } from "lucide-react";
 
 import type { ModalidadAudiencia, SesionDetalleDto } from "@/lib/types";
 import { fechaCorta, fechaHoraLegal } from "@/lib/dates";
@@ -10,12 +10,16 @@ import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import { QrPoster } from "@/components/brand/qr-poster";
 import { SectionTitle } from "@/components/brand/section-title";
 import { SessionStatusPill } from "@/components/brand/session-status-pill";
 import { SignerCard } from "@/components/panel/signer-card";
 import { CerrarSesionDialog } from "@/components/panel/cerrar-sesion-dialog";
 import { useSesionEnVivo } from "@/components/panel/use-sesion-en-vivo";
+import { PrevisualizarDocumento } from "@/components/panel/previsualizar-documento";
 
 interface SesionDetalleProps {
   inicial: SesionDetalleDto;
@@ -32,6 +36,12 @@ const MODALIDAD_LEGIBLE: Record<ModalidadAudiencia, string> = {
 export function SesionDetalle({ inicial, qrUrl }: SesionDetalleProps) {
   const [dialogoCierreAbierto, setDialogoCierreAbierto] = useState(false);
   const [resaltadaId, setResaltadaId] = useState<string | null>(null);
+
+  // Subida/reemplazo del documento PDF dentro de la sesión.
+  const [archivoPdf, setArchivoPdf] = useState<File | null>(null);
+  const [subiendoPdf, setSubiendoPdf] = useState(false);
+  const [errorPdf, setErrorPdf] = useState<string | null>(null);
+  const [exitoPdf, setExitoPdf] = useState(false);
 
   // El dato en vivo manda; mientras el hook carga se usa el snapshot del servidor.
   const [sesionBase, setSesionBase] = useState(inicial);
@@ -143,6 +153,115 @@ export function SesionDetalle({ inicial, qrUrl }: SesionDetalleProps) {
             </CardHeader>
 
             <CardContent className="space-y-5">
+              {/* Documento a firmar */}
+              <section className="rounded-[var(--radius-brand)] border border-humo-200 bg-white p-4">
+                <h2 className="text-sm font-semibold text-ciruela-700">Documento a firmar</h2>
+                <p className="text-xs text-ciruela-400">
+                  {sesion.documentoPdf
+                    ? "Ya hay un PDF adjunto. Puede reemplazarlo o verlo."
+                    : "Aún no hay un PDF adjunto. Adjunte el documento que firmarán los participantes."}
+                </p>
+
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start">
+                  <div className="flex-1">
+                    <Label htmlFor="sd-documento" className="sr-only">
+                      Archivo PDF
+                    </Label>
+                    <Input
+                      id="sd-documento"
+                      type="file"
+                      accept="application/pdf"
+                      disabled={subiendoPdf}
+                      onChange={(e) => {
+                        setArchivoPdf(e.target.files?.[0] ?? null);
+                        setErrorPdf(null);
+                        setExitoPdf(false);
+                      }}
+                    />
+                    {errorPdf ? (
+                      <p className="mt-1.5 text-xs text-guinda-600">{errorPdf}</p>
+                    ) : null}
+                    {exitoPdf ? (
+                      <p className="mt-1.5 text-xs text-emerald-600">Documento actualizado correctamente.</p>
+                    ) : null}
+                  </div>
+                  <Button
+                    variant="primary"
+                    disabled={!archivoPdf || subiendoPdf}
+                    onClick={async () => {
+                      if (!archivoPdf) return;
+                      setSubiendoPdf(true);
+                      setErrorPdf(null);
+                      setExitoPdf(false);
+
+                      if (archivoPdf.type !== "application/pdf") {
+                        setErrorPdf("El archivo debe ser un PDF.");
+                        setSubiendoPdf(false);
+                        return;
+                      }
+                      if (archivoPdf.size > 8 * 1024 * 1024) {
+                        setErrorPdf("El PDF no puede superar los 8 MB.");
+                        setSubiendoPdf(false);
+                        return;
+                      }
+
+                      const formData = new FormData();
+                      formData.append("documento", archivoPdf);
+
+                      try {
+                        const res = await fetch(`/api/sesiones/${sesion.id}`, {
+                          method: "PATCH",
+                          body: formData,
+                        });
+                        const data = (await res.json().catch(() => null)) as
+                          | { sesion: SesionDetalleDto }
+                          | { error: string }
+                          | null;
+
+                        if (res.ok && data && "sesion" in data) {
+                          setSesionBase(data.sesion);
+                          setArchivoPdf(null);
+                          setExitoPdf(true);
+                          void refetch();
+                        } else {
+                          setErrorPdf(
+                            data && "error" in data
+                              ? data.error
+                              : "No se pudo actualizar el documento.",
+                          );
+                        }
+                      } catch {
+                        setErrorPdf("Error de conexión. Intente nuevamente.");
+                      } finally {
+                        setSubiendoPdf(false);
+                      }
+                    }}
+                  >
+                    {subiendoPdf ? (
+                      <Spinner className="h-4 w-4 text-white" />
+                    ) : (
+                      <UploadCloud className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+                    )}
+                    {subiendoPdf ? "Subiendo…" : "Subir / reemplazar"}
+                  </Button>
+                </div>
+
+                {sesion.documentoPdf ? (
+                  <a
+                    href={`/api/documentos/${sesion.documentoPdf}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={cn(
+                      buttonVariants({ variant: "outline", size: "sm" }),
+                      "mt-3 inline-flex",
+                    )}
+                  >
+                    <FileText className="mr-2 h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+                    Ver documento adjunto
+                  </a>
+                ) : null}
+              </section>
+
               {/* Contador grande de firmas */}
               <div className="rounded-[var(--radius-brand)] bg-humo-100 px-6 py-5">
                 <p
@@ -215,32 +334,13 @@ export function SesionDetalle({ inicial, qrUrl }: SesionDetalleProps) {
                   )}
                 >
                   <FileDown aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />
-                  Descargar planilla
+                  Descargar documento firmado
                 </a>
-                {sesion.documentoPdf ? (
-                  <a
-                    href={`/api/documentos/${sesion.documentoPdf}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={cn(buttonVariants({ variant: "outline", size: "md" }))}
-                  >
-                    <FileText aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />
-                    Ver documento
-                  </a>
-                ) : null}
-                <a
-                  href={`/api/planilla/${sesion.id}?modo=preview`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={cn(buttonVariants({ variant: "outline", size: "md" }))}
-                >
-                  <Eye aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />
-                  Previsualizar
-                </a>
+                <PrevisualizarDocumento sesionId={sesion.id} />
               </div>
               {abierta ? (
                 <p className="text-xs text-ciruela-400">
-                  Se recomienda cerrar la sesión antes de generar la planilla final.
+                  Se recomienda cerrar la sesión antes de generar el documento final.
                 </p>
               ) : null}
             </CardContent>

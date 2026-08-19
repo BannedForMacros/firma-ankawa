@@ -2,9 +2,8 @@ import type { Prisma, SigningSession, Signer } from "@prisma/client";
 import { db } from "@/lib/db";
 import { generateSessionToken, generateShortCode } from "@/lib/crypto";
 import { registrarAuditoria } from "@/lib/audit";
-import type {
-  CrearSesionInput,
-} from "@/lib/validation";
+import { guardarDocumentoSesion } from "@/lib/storage";
+import type { CrearSesionInput } from "@/lib/validation";
 import type {
   FirmaResumenDto,
   SesionDetalleDto,
@@ -233,6 +232,18 @@ export async function obtenerSesionParaPlanilla(id: string): Promise<
     where: { id },
     include: { signers: { orderBy: { signedAt: "asc" } } },
   });
+}
+
+export async function actualizarDocumentoSesion(
+  sessionId: string,
+  pdfBuffer: Buffer,
+): Promise<string> {
+  const stored = await guardarDocumentoSesion(sessionId, pdfBuffer);
+  await db.signingSession.update({
+    where: { id: sessionId },
+    data: { documentoPdf: stored.relativePath },
+  });
+  return stored.relativePath;
 }
 
 export type { Prisma };
