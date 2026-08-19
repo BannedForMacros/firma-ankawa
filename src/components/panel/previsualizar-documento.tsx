@@ -12,16 +12,18 @@ import {
 } from "@/components/ui/dialog";
 
 interface PrevisualizarDocumentoProps {
-  sesionId: string;
+  sesionId?: string;
+  url?: string;
   label?: string;
 }
 
 export function PrevisualizarDocumento({
   sesionId,
+  url: urlProp,
   label = "Previsualizar documento firmado",
 }: PrevisualizarDocumentoProps) {
   const [abierto, setAbierto] = useState(false);
-  const url = `/api/planilla/${sesionId}?modo=preview`;
+  const url = urlProp ?? `/api/planilla/${sesionId}?modo=preview`;
 
   return (
     <Dialog open={abierto} onOpenChange={setAbierto}>

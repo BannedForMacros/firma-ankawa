@@ -155,100 +155,20 @@ export function SesionDetalle({ inicial, qrUrl }: SesionDetalleProps) {
             <CardContent className="space-y-5">
               {/* Documento a firmar */}
               <section className="rounded-[var(--radius-brand)] border border-humo-200 bg-white p-4">
-                <h2 className="text-sm font-semibold text-ciruela-700">Documento a firmar</h2>
+                <h2 className="text-sm font-semibold text-ciruela-700">
+                  {sesion.status === "CLOSED" ? "Documento firmado" : "Documento a firmar"}
+                </h2>
                 <p className="text-xs text-ciruela-400">
-                  {sesion.documentoPdf
-                    ? "Ya hay un PDF adjunto. Puede reemplazarlo o verlo."
-                    : "Aún no hay un PDF adjunto. Adjunte el documento que firmarán los participantes."}
+                  {sesion.status === "CLOSED" && sesion.documentoFirmadoPdf
+                    ? "Este es el documento final con las firmas adjuntas. Se generó automáticamente al cerrar la sesión."
+                    : sesion.documentoPdf
+                      ? "Ya hay un PDF adjunto. Puede reemplazarlo o verlo."
+                      : "Aún no hay un PDF adjunto. Adjunte el documento que firmarán los participantes."}
                 </p>
 
-                <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start">
-                  <div className="flex-1">
-                    <Label htmlFor="sd-documento" className="sr-only">
-                      Archivo PDF
-                    </Label>
-                    <Input
-                      id="sd-documento"
-                      type="file"
-                      accept="application/pdf"
-                      disabled={subiendoPdf}
-                      onChange={(e) => {
-                        setArchivoPdf(e.target.files?.[0] ?? null);
-                        setErrorPdf(null);
-                        setExitoPdf(false);
-                      }}
-                    />
-                    {errorPdf ? (
-                      <p className="mt-1.5 text-xs text-guinda-600">{errorPdf}</p>
-                    ) : null}
-                    {exitoPdf ? (
-                      <p className="mt-1.5 text-xs text-emerald-600">Documento actualizado correctamente.</p>
-                    ) : null}
-                  </div>
-                  <Button
-                    variant="primary"
-                    disabled={!archivoPdf || subiendoPdf}
-                    onClick={async () => {
-                      if (!archivoPdf) return;
-                      setSubiendoPdf(true);
-                      setErrorPdf(null);
-                      setExitoPdf(false);
-
-                      if (archivoPdf.type !== "application/pdf") {
-                        setErrorPdf("El archivo debe ser un PDF.");
-                        setSubiendoPdf(false);
-                        return;
-                      }
-                      if (archivoPdf.size > 8 * 1024 * 1024) {
-                        setErrorPdf("El PDF no puede superar los 8 MB.");
-                        setSubiendoPdf(false);
-                        return;
-                      }
-
-                      const formData = new FormData();
-                      formData.append("documento", archivoPdf);
-
-                      try {
-                        const res = await fetch(`/api/sesiones/${sesion.id}`, {
-                          method: "PATCH",
-                          body: formData,
-                        });
-                        const data = (await res.json().catch(() => null)) as
-                          | { sesion: SesionDetalleDto }
-                          | { error: string }
-                          | null;
-
-                        if (res.ok && data && "sesion" in data) {
-                          setSesionBase(data.sesion);
-                          setArchivoPdf(null);
-                          setExitoPdf(true);
-                          void refetch();
-                        } else {
-                          setErrorPdf(
-                            data && "error" in data
-                              ? data.error
-                              : "No se pudo actualizar el documento.",
-                          );
-                        }
-                      } catch {
-                        setErrorPdf("Error de conexión. Intente nuevamente.");
-                      } finally {
-                        setSubiendoPdf(false);
-                      }
-                    }}
-                  >
-                    {subiendoPdf ? (
-                      <Spinner className="h-4 w-4 text-white" />
-                    ) : (
-                      <UploadCloud className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-                    )}
-                    {subiendoPdf ? "Subiendo…" : "Subir / reemplazar"}
-                  </Button>
-                </div>
-
-                {sesion.documentoPdf ? (
+                {sesion.status === "CLOSED" && sesion.documentoFirmadoPdf ? (
                   <a
-                    href={`/api/documentos/${sesion.documentoPdf}`}
+                    href={`/api/documentos/${sesion.documentoFirmadoPdf}`}
                     target="_blank"
                     rel="noreferrer"
                     className={cn(
@@ -257,9 +177,110 @@ export function SesionDetalle({ inicial, qrUrl }: SesionDetalleProps) {
                     )}
                   >
                     <FileText className="mr-2 h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-                    Ver documento adjunto
+                    Ver documento firmado
                   </a>
-                ) : null}
+                ) : (
+                  <>
+                    <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start">
+                      <div className="flex-1">
+                        <Label htmlFor="sd-documento" className="sr-only">
+                          Archivo PDF
+                        </Label>
+                        <Input
+                          id="sd-documento"
+                          type="file"
+                          accept="application/pdf"
+                          disabled={subiendoPdf}
+                          onChange={(e) => {
+                            setArchivoPdf(e.target.files?.[0] ?? null);
+                            setErrorPdf(null);
+                            setExitoPdf(false);
+                          }}
+                        />
+                        {errorPdf ? (
+                          <p className="mt-1.5 text-xs text-guinda-600">{errorPdf}</p>
+                        ) : null}
+                        {exitoPdf ? (
+                          <p className="mt-1.5 text-xs text-emerald-600">Documento actualizado correctamente.</p>
+                        ) : null}
+                      </div>
+                      <Button
+                        variant="primary"
+                        disabled={!archivoPdf || subiendoPdf}
+                        onClick={async () => {
+                          if (!archivoPdf) return;
+                          setSubiendoPdf(true);
+                          setErrorPdf(null);
+                          setExitoPdf(false);
+
+                          if (archivoPdf.type !== "application/pdf") {
+                            setErrorPdf("El archivo debe ser un PDF.");
+                            setSubiendoPdf(false);
+                            return;
+                          }
+                          if (archivoPdf.size > 8 * 1024 * 1024) {
+                            setErrorPdf("El PDF no puede superar los 8 MB.");
+                            setSubiendoPdf(false);
+                            return;
+                          }
+
+                          const formData = new FormData();
+                          formData.append("documento", archivoPdf);
+
+                          try {
+                            const res = await fetch(`/api/sesiones/${sesion.id}`, {
+                              method: "PATCH",
+                              body: formData,
+                            });
+                            const data = (await res.json().catch(() => null)) as
+                              | { sesion: SesionDetalleDto }
+                              | { error: string }
+                              | null;
+
+                            if (res.ok && data && "sesion" in data) {
+                              setSesionBase(data.sesion);
+                              setArchivoPdf(null);
+                              setExitoPdf(true);
+                              void refetch();
+                            } else {
+                              setErrorPdf(
+                                data && "error" in data
+                                  ? data.error
+                                  : "No se pudo actualizar el documento.",
+                              );
+                            }
+                          } catch {
+                            setErrorPdf("Error de conexión. Intente nuevamente.");
+                          } finally {
+                            setSubiendoPdf(false);
+                          }
+                        }}
+                      >
+                        {subiendoPdf ? (
+                          <Spinner className="h-4 w-4 text-white" />
+                        ) : (
+                          <UploadCloud className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+                        )}
+                        {subiendoPdf ? "Subiendo…" : "Subir / reemplazar"}
+                      </Button>
+                    </div>
+
+                    {sesion.documentoPdf ? (
+                      <a
+                        href={`/api/documentos/${sesion.documentoPdf}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className={cn(
+                          buttonVariants({ variant: "outline", size: "sm" }),
+                          "mt-3 inline-flex",
+                        )}
+                      >
+                        <FileText className="mr-2 h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+                        Ver documento adjunto
+                      </a>
+                    ) : null}
+                  </>
+                )}
               </section>
 
               {/* Contador grande de firmas */}
@@ -327,16 +348,31 @@ export function SesionDetalle({ inicial, qrUrl }: SesionDetalleProps) {
                     </Button>
                   </>
                 ) : null}
-                <a
-                  href={`/api/planilla/${sesion.id}`}
-                  className={cn(
-                    buttonVariants({ variant: abierta ? "outline" : "primary", size: "md" })
-                  )}
-                >
-                  <FileDown aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />
-                  Descargar documento firmado
-                </a>
-                <PrevisualizarDocumento sesionId={sesion.id} />
+                {!abierta && sesion.documentoFirmadoPdf ? (
+                  <>
+                    <a
+                      href={`/api/documentos/${sesion.documentoFirmadoPdf}`}
+                      className={cn(buttonVariants({ variant: "primary", size: "md" }))}
+                    >
+                      <FileDown aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />
+                      Descargar documento firmado
+                    </a>
+                    <PrevisualizarDocumento url={`/api/documentos/${sesion.documentoFirmadoPdf}`} />
+                  </>
+                ) : (
+                  <>
+                    <a
+                      href={`/api/planilla/${sesion.id}`}
+                      className={cn(
+                        buttonVariants({ variant: abierta ? "outline" : "primary", size: "md" })
+                      )}
+                    >
+                      <FileDown aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />
+                      Descargar documento firmado
+                    </a>
+                    <PrevisualizarDocumento sesionId={sesion.id} />
+                  </>
+                )}
               </div>
               {abierta ? (
                 <p className="text-xs text-ciruela-400">
