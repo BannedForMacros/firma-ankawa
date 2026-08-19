@@ -85,6 +85,7 @@ export async function crearSesion(
   const sesion = await db.signingSession.create({
     data: {
       ...input,
+      sede: "",
       code: generateShortCode(),
       token: generateSessionToken(),
       createdById: actor.id,

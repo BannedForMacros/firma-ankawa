@@ -21,7 +21,6 @@ export const crearSesionSchema = z.object({
   asunto: z.string().trim().min(5, "Describa el asunto de la audiencia (mínimo 5 caracteres).").max(300),
   expediente: z.string().trim().min(3, "Ingrese el número de expediente.").max(60),
   fechaAudiencia: z.coerce.date({ message: "Ingrese la fecha de la audiencia." }),
-  sede: z.string().trim().min(3, "Ingrese la sede.").max(120),
   modalidad: z.enum(["PRESENCIAL", "VIRTUAL", "MIXTA"]),
 });
 
