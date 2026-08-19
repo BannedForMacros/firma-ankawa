@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { CalendarDays, FileText } from "lucide-react";
 import { obtenerSesionPublicaPorToken } from "@/server/session-service";
 import { fechaCorta } from "@/lib/dates";
-import type { DocumentoSesionDto, SesionPublicaDto } from "@/lib/types";
+import type { DocumentoSesionDto, EstadoSesion, SesionPublicaDto } from "@/lib/types";
 import { AnkawaLogo } from "@/components/brand/logo";
 import { LogoFondo } from "@/components/brand/logo-fondo";
 import { AlaPoligonal } from "@/components/brand/ala-poligonal";
@@ -19,22 +19,26 @@ interface PageProps {
   params: Promise<{ token: string }>;
 }
 
-function DocumentosFirmados({ documentos }: { documentos: DocumentoSesionDto[] }) {
+function DocumentosAdjuntos({ documentos, status }: { documentos: DocumentoSesionDto[]; status: EstadoSesion }) {
   return (
-    <ul className="mt-2 flex flex-wrap gap-2">
-      {documentos.map((doc) => (
-        <li key={doc.id} className="flex items-center gap-1.5 rounded-full bg-guinda-50 px-2.5 py-1">
-          <FileText className="h-3.5 w-3.5 text-guinda-500" strokeWidth={1.5} aria-hidden="true" />
-          <a
-            href={doc.signedPath ? `/api/documentos/${doc.signedPath}` : `/api/documentos/${doc.originalPath}`}
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs font-semibold text-guinda-600 hover:text-guinda-700"
+    <ul className="mt-2 space-y-1.5">
+      {documentos.map((doc) => {
+        const url =
+          status === "CLOSED" && doc.signedPath
+            ? `/api/documentos/${doc.signedPath}`
+            : `/api/documentos/${doc.originalPath}`;
+        return (
+          <li
+            key={doc.id}
+            className="flex items-center justify-between gap-2 rounded-[var(--radius-brand)] border border-humo-200 bg-white px-3 py-2"
           >
-            {doc.originalName}
-          </a>
-        </li>
-      ))}
+            <span className="truncate text-xs font-medium text-ciruela-700" title={doc.originalName}>
+              {doc.originalName}
+            </span>
+            <RevisarDocumentos url={url} label="Ver documento" title={doc.originalName} />
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -54,18 +58,6 @@ export default async function FirmarPage({ params }: PageProps) {
     status: encontrada.status,
     documentos: encontrada.documentos,
   };
-
-  const primerDocumento = sesion.documentos[0];
-  const documentoUrl =
-    sesion.status === "CLOSED"
-      ? primerDocumento?.signedPath
-        ? `/api/documentos/${primerDocumento.signedPath}`
-        : primerDocumento?.originalPath
-          ? `/api/documentos/${primerDocumento.originalPath}`
-          : null
-      : primerDocumento?.originalPath
-        ? `/api/documentos/${primerDocumento.originalPath}`
-        : null;
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-humo-100">
@@ -112,17 +104,14 @@ export default async function FirmarPage({ params }: PageProps) {
               <span className="sr-only">Fecha:</span>
               {fechaCorta(new Date(sesion.fechaAudiencia))}
             </li>
-            {documentoUrl ? (
-              <li className="flex items-center gap-1.5 rounded-full bg-guinda-50 px-2.5 py-1">
-                <RevisarDocumentos url={documentoUrl} />
-              </li>
-            ) : null}
           </ul>
 
-          {sesion.documentos.length > 1 ? (
+          {sesion.documentos.length > 0 ? (
             <div className="mt-3 rounded-[var(--radius-brand)] border border-humo-200 bg-humo-50 p-3">
-              <p className="mb-1.5 text-xs font-semibold text-ciruela-700">Documentos adjuntos ({sesion.documentos.length})</p>
-              <DocumentosFirmados documentos={sesion.documentos} />
+              <p className="mb-1.5 text-xs font-semibold text-ciruela-700">
+                Documentos adjuntos ({sesion.documentos.length})
+              </p>
+              <DocumentosAdjuntos documentos={sesion.documentos} status={sesion.status} />
             </div>
           ) : null}
         </section>

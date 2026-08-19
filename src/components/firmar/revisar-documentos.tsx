@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { FileText } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -13,9 +12,11 @@ import {
 
 interface RevisarDocumentosProps {
   url: string;
+  label?: string;
+  title?: string;
 }
 
-export function RevisarDocumentos({ url }: RevisarDocumentosProps) {
+export function RevisarDocumentos({ url, label, title }: RevisarDocumentosProps) {
   const [abierto, setAbierto] = useState(false);
 
   return (
@@ -26,25 +27,14 @@ export function RevisarDocumentos({ url }: RevisarDocumentosProps) {
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-guinda-600 hover:text-guinda-700"
         >
           <FileText className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" />
-          Revisar documento
+          {label ?? "Revisar documento"}
         </button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] max-w-4xl p-0">
         <DialogHeader className="p-4 pb-0">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-base font-semibold text-ciruela-700">
-              Documento a firmar
-            </DialogTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setAbierto(false)}
-              aria-label="Cerrar"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <DialogTitle className="text-base font-semibold text-ciruela-700">
+            {title ?? "Documento a firmar"}
+          </DialogTitle>
         </DialogHeader>
         <div className="p-4 pt-2">
           <div className="relative h-[70vh] w-full overflow-hidden rounded-[var(--radius-brand)] border border-humo-300 bg-humo-100">
