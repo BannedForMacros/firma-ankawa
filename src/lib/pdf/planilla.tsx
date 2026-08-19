@@ -17,6 +17,11 @@ import {
 } from "@/server/session-service";
 import { leerImagenFirma, leerDocumentoSesion } from "@/lib/storage";
 import { fechaHoraLegal, leyendaConformidad } from "@/lib/dates";
+import { calcularEspacioUltimaPagina } from "@/lib/pdf/page-space";
+import {
+  calcularAlturaBloque,
+  dibujarBloqueFirmas,
+} from "@/lib/pdf/dibujar-bloque-firmas";
 
 /**
  * Planilla de firmas oficial en PDF.
@@ -290,21 +295,70 @@ export async function generarPlanillaPdf(
     />,
   );
 
-  // Si hay un documento adjunto, fusionamos el PDF original con la página de firmas.
-  if (sesion.documentoPdf) {
-    try {
-      const documentoOriginal = await leerDocumentoSesion(sesion.documentoPdf);
-      const merged = await mergePdfs(documentoOriginal, Buffer.from(planillaBuffer));
-      return { buffer: merged, code: sesion.code };
-    } catch (error) {
-      console.warn(
-        "[planilla] No se pudo fusionar el documento adjunto; se generará solo la planilla.",
-        error,
-      );
-    }
+  // Si no hay documento adjunto, se devuelve la planilla de firmas sola.
+  if (!sesion.documentoPdf) {
+    return { buffer: Buffer.from(planillaBuffer), code: sesion.code };
   }
 
-  return { buffer: Buffer.from(planillaBuffer), code: sesion.code };
+  try {
+    const documentoOriginal = await leerDocumentoSesion(sesion.documentoPdf);
+    const pdfDoc = await PDFDocument.load(documentoOriginal);
+
+    const margenInferior = 40;
+    const margenLateral = 56;
+    const gap = 8;
+    const blockWidth = (await medirUltimaPagina(pdfDoc)).width - margenLateral * 2;
+    const blockHeight = await calcularAlturaBloque(sesion.signers.length);
+
+    const espacio = await calcularEspacioUltimaPagina(documentoOriginal, margenInferior);
+
+    // Si hay espacio suficiente en la última página, dibujamos el bloque de firmas
+    // justo después del contenido existente (seguido). De lo contrario, añadimos una
+    // página nueva con la planilla generada por react-pdf.
+    if (espacio && espacio.availableSpace >= blockHeight + gap) {
+      const pages = pdfDoc.getPages();
+      const lastPage = pages[pages.length - 1];
+
+      // Colocamos el bloque inmediatamente debajo del contenido, sin taparlo.
+      const startY = espacio.contentBottomY - gap - blockHeight;
+      const startX = margenLateral;
+
+      await dibujarBloqueFirmas(
+        pdfDoc,
+        lastPage,
+        startX,
+        Math.max(margenInferior, startY),
+        blockWidth,
+        blockHeight,
+        sesion.signers,
+        {
+          code: sesion.code,
+          asunto: sesion.asunto,
+          expediente: sesion.expediente,
+          fechaAudiencia: sesion.fechaAudiencia,
+        },
+      );
+
+      const mergedBytes = await pdfDoc.save();
+      return { buffer: Buffer.from(mergedBytes), code: sesion.code };
+    }
+
+    const merged = await mergePdfs(documentoOriginal, Buffer.from(planillaBuffer));
+    return { buffer: merged, code: sesion.code };
+  } catch (error) {
+    console.warn(
+      "[planilla] No se pudo fusionar el documento adjunto; se generará solo la planilla.",
+      error,
+    );
+    return { buffer: Buffer.from(planillaBuffer), code: sesion.code };
+  }
+}
+
+async function medirUltimaPagina(pdfDoc: PDFDocument): Promise<{ width: number }> {
+  const pages = pdfDoc.getPages();
+  const lastPage = pages[pages.length - 1];
+  const { width } = lastPage.getSize();
+  return { width };
 }
 
 async function mergePdfs(originalBuffer: Buffer, signaturesBuffer: Buffer): Promise<Buffer> {

@@ -12,6 +12,7 @@ export async function GET(
 
   try {
     const buffer = await leerDocumentoSesion(relativePath);
+    console.log(`[documentos GET] Sirviendo ${relativePath}: ${buffer.length} bytes`);
     return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {

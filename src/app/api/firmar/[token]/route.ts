@@ -50,6 +50,7 @@ export async function GET(
     modalidad: encontrada.modalidad,
     status: encontrada.status,
     documentoPdf: encontrada.documentoPdf,
+    documentoFirmadoPdf: encontrada.documentoFirmadoPdf,
   };
 
   return NextResponse.json({ sesion }, { status: 200 });

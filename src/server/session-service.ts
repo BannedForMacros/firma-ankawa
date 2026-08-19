@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { generateSessionToken, generateShortCode } from "@/lib/crypto";
 import { registrarAuditoria } from "@/lib/audit";
 import { guardarDocumentoSesion } from "@/lib/storage";
+import { generarYGuardarDocumentoFirmado } from "@/server/documento-final-service";
 import type { CrearSesionInput } from "@/lib/validation";
 import type {
   FirmaResumenDto,
@@ -118,6 +119,7 @@ export async function obtenerDetalleSesion(
     closedByNombre: sesion.closedBy?.nombre ?? null,
     createdByNombre: sesion.createdBy.nombre,
     documentoPdf: sesion.documentoPdf,
+    documentoFirmadoPdf: sesion.documentoFirmadoPdf,
     firmas: sesion.signers.map(toFirmaDto),
   };
 }
@@ -149,6 +151,15 @@ export async function cerrarSesion(
     });
   });
 
+  // Generamos y persistimos el documento final con las firmas. Esto ocurre
+  // fuera de la transacción para no bloquear la sesión mientras se renderiza
+  // el PDF; si falla, el cierre ya está hecho y se puede reintentar desde la UI.
+  try {
+    await generarYGuardarDocumentoFirmado(id);
+  } catch (error) {
+    console.error(`[cerrarSesion] No se pudo generar el documento final para ${id}:`, error);
+  }
+
   await registrarAuditoria({
     actorType: "USER",
     userId: actor.id,
@@ -175,6 +186,7 @@ export async function obtenerSesionPublicaPorToken(
     modalidad: sesion.modalidad,
     status: sesion.status,
     documentoPdf: sesion.documentoPdf,
+    documentoFirmadoPdf: sesion.documentoFirmadoPdf,
   };
 }
 

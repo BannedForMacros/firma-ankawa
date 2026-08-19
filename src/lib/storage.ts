@@ -62,12 +62,12 @@ export async function leerImagenFirma(relativePath: string): Promise<Buffer> {
 export async function guardarDocumentoSesion(
   sessionId: string,
   pdfBuffer: Buffer,
+  fileName = "documento.pdf",
 ): Promise<StoredDocument> {
   const sha256 = sha256Hex(pdfBuffer);
   const dir = path.join(DOCUMENTS_ROOT, sessionId);
   await mkdir(dir, { recursive: true });
 
-  const fileName = "documento.pdf";
   await writeFile(path.join(dir, fileName), pdfBuffer);
 
   return {

@@ -33,11 +33,15 @@ export default async function FirmarPage({ params }: PageProps) {
     modalidad: encontrada.modalidad,
     status: encontrada.status,
     documentoPdf: encontrada.documentoPdf,
+    documentoFirmadoPdf: encontrada.documentoFirmadoPdf,
   };
 
-  const documentoUrl = sesion.documentoPdf
-    ? `/api/documentos/${sesion.documentoPdf}`
-    : null;
+  const documentoUrl =
+    sesion.status === "CLOSED" && sesion.documentoFirmadoPdf
+      ? `/api/documentos/${sesion.documentoFirmadoPdf}`
+      : sesion.documentoPdf
+        ? `/api/documentos/${sesion.documentoPdf}`
+        : null;
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-humo-100">

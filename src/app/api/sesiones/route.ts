@@ -18,14 +18,14 @@ export async function GET(): Promise<NextResponse> {
   return NextResponse.json({ sesiones }, { status: 200 });
 }
 
-function validarPdf(file: File): { ok: true; buffer: Buffer } | { ok: false; error: string } {
+function validarPdf(file: File): { ok: true } | { ok: false; error: string } {
   if (file.type !== "application/pdf") {
     return { ok: false, error: "El documento debe ser un archivo PDF." };
   }
   if (file.size > 20 * 1024 * 1024) {
     return { ok: false, error: "El PDF no puede superar los 20 MB." };
   }
-  return { ok: true, buffer: Buffer.from(file.type) };
+  return { ok: true };
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -63,16 +63,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   const documento = formData.get("documento");
-  let documentoPdf: string | null = null;
+  let pdfBuffer: Buffer | null = null;
   if (documento instanceof File && documento.size > 0) {
     const validacion = validarPdf(documento);
     if (!validacion.ok) {
       return NextResponse.json({ error: validacion.error }, { status: 400 });
     }
-    // Evitamos usar el buffer de validación (usamos file.type placeholder).
     const bytes = await documento.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    if (buffer.subarray(0, 4).toString("ascii") !== "%PDF") {
+    pdfBuffer = Buffer.from(bytes);
+    if (pdfBuffer.length === 0 || pdfBuffer.subarray(0, 4).toString("ascii") !== "%PDF") {
       return NextResponse.json({ error: "El archivo no es un PDF válido." }, { status: 400 });
     }
   }
@@ -80,11 +79,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const { ip, userAgent } = clientInfo(req);
   const sesion = await crearSesion(parsed.data, { id: user.id, ip, userAgent });
 
-  if (documento instanceof File && documento.size > 0) {
-    const bytes = await documento.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const stored = await guardarDocumentoSesion(sesion.id, buffer);
+  let documentoPdf: string | null = null;
+  if (pdfBuffer) {
+    console.log(`[sesiones POST] Guardando PDF para sesión ${sesion.id}: ${pdfBuffer.length} bytes`);
+    const stored = await guardarDocumentoSesion(sesion.id, pdfBuffer);
     documentoPdf = stored.relativePath;
+    console.log(`[sesiones POST] PDF guardado en: ${stored.relativePath}`);
   }
 
   // Actualizamos la sesión con la ruta del documento si se subió.

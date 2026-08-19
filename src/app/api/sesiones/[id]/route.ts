@@ -79,8 +79,11 @@ export async function PATCH(
   }
 
   try {
+    console.log(`[sesiones PATCH] Actualizando PDF para sesión ${id}: ${buffer.length} bytes`);
     await actualizarDocumentoSesion(id, buffer);
-  } catch {
+    console.log(`[sesiones PATCH] PDF actualizado correctamente`);
+  } catch (error) {
+    console.error(`[sesiones PATCH] Error al guardar PDF:`, error);
     return NextResponse.json(
       { error: "No se pudo guardar el documento. Intente nuevamente." },
       { status: 500 },

@@ -64,8 +64,9 @@ model SigningSession {
   fechaAudiencia DateTime
   sede           String
   modalidad      Modalidad     @default(PRESENCIAL)
-  status         SessionStatus @default(OPEN)
-  documentoPdf   String?
+  status              SessionStatus @default(OPEN)
+  documentoPdf        String?
+  documentoFirmadoPdf String?
 
   createdById String
   createdBy   User      @relation("SesionCreadaPor", fields: [createdById], references: [id])

@@ -45,6 +45,7 @@ export interface SesionDetalleDto extends SesionResumenDto {
   closedByNombre: string | null;
   createdByNombre: string;
   documentoPdf: string | null;
+  documentoFirmadoPdf: string | null;
   firmas: FirmaResumenDto[];
 }
 
@@ -58,6 +59,7 @@ export interface SesionPublicaDto {
   modalidad: ModalidadAudiencia;
   status: EstadoSesion;
   documentoPdf: string | null;
+  documentoFirmadoPdf: string | null;
 }
 
 export interface IdentidadDniDto {
