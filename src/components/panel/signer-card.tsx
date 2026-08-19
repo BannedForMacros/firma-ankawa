@@ -65,7 +65,7 @@ export function SignerCard({ firma, orden, resaltada = false, className }: Signe
           <p className="truncate text-xs text-ciruela-400">Entidad: {firma.entidad}</p>
         ) : null}
         <p className="truncate text-xs text-ciruela-400">
-          {firma.docType} {firma.docNumberMasked} · {firma.cargo} · {firma.parte}
+          {firma.docType} {firma.docNumberMasked} · {firma.cargo}
         </p>
       </div>
 

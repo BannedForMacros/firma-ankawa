@@ -31,7 +31,6 @@ export interface FirmaResumenDto {
   entidad: string | null;
   repNombre: string | null;
   cargo: string;
-  parte: string;
   verified: boolean;
   signMethod: MetodoFirma;
   signedAt: string; // ISO

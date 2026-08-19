@@ -109,7 +109,6 @@ export async function guardarFirma(
           repNombre: input.repNombre ?? null,
           repDni: input.repDni ?? null,
           cargo: input.cargo,
-          parte: input.parte,
           verified: input.verified,
           verificationRaw: evidencia.verificationRaw ?? Prisma.JsonNull,
           signMethod: input.signMethod,

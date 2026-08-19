@@ -19,7 +19,6 @@ export interface IdentidadFirmante {
   displayName: string;
   entidad?: string;
   cargo: string;
-  parte: string;
   verified: boolean;
 }
 
@@ -100,7 +99,6 @@ export function FlujoFirma({ sesion, token }: FlujoFirmaProps) {
           displayName: identidad.displayName,
           ...(identidad.entidad ? { entidad: identidad.entidad } : {}),
           cargo: identidad.cargo,
-          parte: identidad.parte,
           verified: identidad.verified,
           signMethod: firma.metodo,
           imageDataUrl: firma.dataUrl,

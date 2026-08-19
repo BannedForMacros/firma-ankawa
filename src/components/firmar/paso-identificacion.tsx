@@ -3,30 +3,19 @@
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { dniSchema } from "@/lib/validation";
-import type { CatalogoItemDto, IdentidadDto } from "@/lib/types";
+import type { IdentidadDto } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { VerifiedBadge } from "@/components/brand/verified-badge";
-import { SelectOInput } from "@/components/firmar/select-o-input";
 import type { IdentidadFirmante } from "@/components/firmar/flujo-firma";
 
 interface PasoIdentificacionProps {
   token: string;
   onChange: (identidad: IdentidadFirmante | null) => void;
 }
-
-const CARGOS_FRECUENTES = [
-  "Árbitro único",
-  "Árbitro",
-  "Representante legal",
-  "Abogado(a)",
-  "Secretario(a) arbitral",
-  "Perito",
-  "Testigo",
-] as const;
 
 async function leerMensajeDeError(res: Response): Promise<string> {
   try {
@@ -53,51 +42,6 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
   const [conEntidad, setConEntidad] = useState(false);
   const [entidad, setEntidad] = useState("");
   const [cargo, setCargo] = useState("");
-  const [parte, setParte] = useState("");
-
-  const [cargos, setCargos] = useState<CatalogoItemDto[]>([]);
-  const [partes, setPartes] = useState<CatalogoItemDto[]>([]);
-  const [cargandoCatalogos, setCargandoCatalogos] = useState(true);
-
-  // Carga de catálogos.
-  useEffect(() => {
-    let cancelado = false;
-    async function cargar() {
-      try {
-        const [resCargos, resPartes] = await Promise.all([
-          fetch("/api/cargos"),
-          fetch("/api/partes"),
-        ]);
-        const dataCargos = (await resCargos.json().catch(() => ({}))) as {
-          cargos?: CatalogoItemDto[];
-        };
-        const dataPartes = (await resPartes.json().catch(() => ({}))) as {
-          partes?: CatalogoItemDto[];
-        };
-        if (!cancelado) {
-          setCargos(dataCargos.cargos ?? []);
-          setPartes(dataPartes.partes ?? []);
-        }
-      } catch {
-        // Fallback implícito con opciones frecuentes.
-      } finally {
-        if (!cancelado) setCargandoCatalogos(false);
-      }
-    }
-    void cargar();
-    return () => {
-      cancelado = true;
-    };
-  }, []);
-
-  const opcionesCargo = useMemo(
-    () => (cargos.length > 0 ? cargos.map((c) => c.nombre) : CARGOS_FRECUENTES.slice()),
-    [cargos]
-  );
-  const opcionesParte = useMemo(
-    () => (partes.length > 0 ? partes.map((p) => p.nombre) : PARTES_FRECUENTES.slice()),
-    [partes]
-  );
 
   const numeroValido = dniSchema.safeParse(numero).success;
 
@@ -152,7 +96,6 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
       numeroValido &&
       displayName.length >= 3 &&
       cargo.trim().length >= 2 &&
-      parte.trim().length >= 2 &&
       entidadValida;
     if (!completo) return null;
     return {
@@ -161,10 +104,9 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
       displayName,
       ...(conEntidad && entidadFinal ? { entidad: entidadFinal } : {}),
       cargo: cargo.trim(),
-      parte: parte.trim(),
       verified: resultado !== null,
     };
-  }, [identificado, numeroValido, displayName, conEntidad, entidad, cargo, parte, resultado, numero]);
+  }, [identificado, numeroValido, displayName, conEntidad, entidad, cargo, resultado, numero]);
 
   useEffect(() => {
     onChange(identidadCompleta);
@@ -268,7 +210,7 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
           <div>
             <h3 className="text-sm font-semibold text-ciruela-700">¿En qué calidad firma?</h3>
             <p className="mt-0.5 text-xs leading-relaxed text-ciruela-400">
-              Estos datos aparecerán bajo su firma en el acta.
+              Estos datos aparecerán bajo su firma en el documento.
             </p>
           </div>
 
@@ -316,28 +258,14 @@ export function PasoIdentificacion({ token, onChange }: PasoIdentificacionProps)
             </div>
           ) : null}
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <SelectOInput
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor={`${idBase}-cargo`}>Cargo o rol</Label>
+            <Input
               id={`${idBase}-cargo`}
-              label="Cargo o rol"
-              options={opcionesCargo}
               value={cargo}
-              onChange={setCargo}
-              placeholder="Seleccione un cargo"
-              placeholderInput="Escriba su cargo"
-              otroLabel="Otro cargo"
-              disabled={cargandoCatalogos}
-            />
-            <SelectOInput
-              id={`${idBase}-parte`}
-              label="Parte que representa"
-              options={opcionesParte}
-              value={parte}
-              onChange={setParte}
-              placeholder="Seleccione una parte"
-              placeholderInput="Escriba la parte"
-              otroLabel="Otra parte"
-              disabled={cargandoCatalogos}
+              onChange={(e) => setCargo(e.target.value)}
+              placeholder="Ej.: Representante legal, Árbitro, Testigo"
+              className="min-h-11"
             />
           </div>
         </div>

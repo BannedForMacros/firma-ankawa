@@ -55,14 +55,10 @@ export function PasoConfirmacion({
           </p>
         ) : null}
 
-        <div className="mt-3 grid gap-x-4 gap-y-1 text-sm sm:grid-cols-3">
+        <div className="mt-3 grid gap-x-4 gap-y-1 text-sm sm:grid-cols-2">
           <p>
             <span className="font-medium text-ciruela-700">Cargo:</span>{" "}
             <span className="text-berenjena">{identidad.cargo}</span>
-          </p>
-          <p>
-            <span className="font-medium text-ciruela-700">Parte:</span>{" "}
-            <span className="text-berenjena">{identidad.parte}</span>
           </p>
           <p>
             <span className="font-medium text-ciruela-700">Firma:</span>{" "}

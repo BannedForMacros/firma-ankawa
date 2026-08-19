@@ -45,7 +45,6 @@ export const guardarFirmaSchema = z
     repNombre: z.string().trim().min(3).max(200).optional(),
     repDni: dniSchema.optional(),
     cargo: z.string().trim().min(2, "Ingrese el cargo o rol en la audiencia.").max(120),
-    parte: z.string().trim().min(2, "Indique la parte que representa.").max(160),
     verified: z.boolean(),
     signMethod: z.enum(["DRAWN", "UPLOADED"]),
     imageDataUrl: pngDataUrlSchema,

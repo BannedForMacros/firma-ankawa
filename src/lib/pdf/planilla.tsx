@@ -161,7 +161,6 @@ function CeldaFirma({ firma, imagenDataUri }: FirmaConImagen) {
         ) : null}
         <Text style={estilos.textoDato}>{`NOMBRE: ${firma.displayName}`.toUpperCase()}</Text>
         <Text style={estilos.textoDato}>{`CARGO: ${firma.cargo}`.toUpperCase()}</Text>
-        <Text style={estilos.textoDato}>{`PARTE: ${firma.parte}`.toUpperCase()}</Text>
       </View>
     </View>
   );

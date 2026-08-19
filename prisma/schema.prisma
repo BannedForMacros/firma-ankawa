@@ -65,6 +65,7 @@ model SigningSession {
   sede           String
   modalidad      Modalidad     @default(PRESENCIAL)
   status         SessionStatus @default(OPEN)
+  documentoPdf   String?
 
   createdById String
   createdBy   User      @relation("SesionCreadaPor", fields: [createdById], references: [id])
@@ -97,7 +98,7 @@ model Signer {
   /// Solo RUC: DNI del representante
   repDni    String?
   cargo     String
-  parte     String
+  parte     String?
 
   /// true si la identidad fue verificada contra RENIEC/SUNAT (Decolecta)
   verified        Boolean @default(false)

@@ -36,7 +36,6 @@ function toFirmaDto(firma: Signer): FirmaResumenDto {
     entidad: firma.entidad,
     repNombre: firma.repNombre,
     cargo: firma.cargo,
-    parte: firma.parte,
     verified: firma.verified,
     signMethod: firma.signMethod,
     signedAt: firma.signedAt.toISOString(),
