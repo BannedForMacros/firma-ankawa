@@ -81,10 +81,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   let documentoPdf: string | null = null;
   if (pdfBuffer) {
-    console.log(`[sesiones POST] Guardando PDF para sesión ${sesion.id}: ${pdfBuffer.length} bytes`);
     const stored = await guardarDocumentoSesion(sesion.id, pdfBuffer);
     documentoPdf = stored.relativePath;
-    console.log(`[sesiones POST] PDF guardado en: ${stored.relativePath}`);
   }
 
   // Actualizamos la sesión con la ruta del documento si se subió.

@@ -28,7 +28,6 @@ export async function GET(
 
   try {
     const { buffer, code } = await generarPlanillaPdf(id);
-    console.log(`[planilla GET] PDF generado para ${id}: ${buffer.length} bytes, modo ${esPreview ? "preview" : "download"}`);
 
     const { ip, userAgent } = clientInfo(req);
     await registrarAuditoria({
