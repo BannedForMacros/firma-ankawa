@@ -151,7 +151,8 @@ En cada handler público: `rateLimit` por IP + `cleanupExpiredBuckets()`.
   `ReglaDeNegocioError` → su status.
 - `PATCH /api/sesiones/[id]/fecha-leyenda` (requireUser) Body `{fechaLeyendaConformidad: ISO}`
   → `{sesion: SesionDetalleDto}`; actualiza la fecha que aparece en la leyenda
-  "Firmado en señal de conformidad…".
+  "Firmado en señal de conformidad…". Si la sesión está cerrada, regenera
+  automáticamente los documentos firmados.
 - `GET /api/firmas/[...path]` (requireUser) → PNG binario vía
   `leerImagenFirma(path.join("/"))`, `Content-Type: image/png`,
   `Cache-Control: private, no-store`. 404 si no existe.

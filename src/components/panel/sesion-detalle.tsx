@@ -212,6 +212,12 @@ export function SesionDetalle({ inicial, qrUrl }: SesionDetalleProps) {
                   <dd className="flex flex-wrap items-center gap-2">
                     {editandoFechaLeyenda ? (
                       <>
+                        {!abierta ? (
+                          <p className="w-full text-xs text-guinda-600">
+                            La sesión está cerrada. Al cambiar esta fecha se regenerarán los
+                            documentos firmados ya generados.
+                          </p>
+                        ) : null}
                         <input
                           type="date"
                           value={fechaLeyendaEditada}
@@ -239,17 +245,15 @@ export function SesionDetalle({ inicial, qrUrl }: SesionDetalleProps) {
                     ) : (
                       <>
                         <span>Acta de conformidad: {fechaLeyendaConformidadLegible}</span>
-                        {abierta ? (
-                          <button
-                            type="button"
-                            onClick={iniciarEdicionFechaLeyenda}
-                            className="inline-flex items-center gap-1 text-xs font-medium text-guinda-600 hover:text-guinda-700"
-                            aria-label="Editar fecha del acta de conformidad"
-                          >
-                            <Pencil className="h-3 w-3" strokeWidth={1.5} />
-                            Editar
-                          </button>
-                        ) : null}
+                        <button
+                          type="button"
+                          onClick={iniciarEdicionFechaLeyenda}
+                          className="inline-flex items-center gap-1 text-xs font-medium text-guinda-600 hover:text-guinda-700"
+                          aria-label="Editar fecha del acta de conformidad"
+                        >
+                          <Pencil className="h-3 w-3" strokeWidth={1.5} />
+                          Editar
+                        </button>
                       </>
                     )}
                   </dd>

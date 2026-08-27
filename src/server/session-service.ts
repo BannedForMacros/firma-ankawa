@@ -349,16 +349,28 @@ export async function actualizarFechaLeyendaConformidad(
     select: { status: true },
   });
   if (!actual) throw new ReglaDeNegocioError("La sesión no existe.", 404);
-  if (actual.status === "CLOSED") {
-    throw new ReglaDeNegocioError(
-      "No se puede editar la fecha de una sesión cerrada. Reabra la sesión o genere una nueva.",
-      409,
-    );
-  }
 
-  const sesion = await db.signingSession.update({
+  await db.signingSession.update({
     where: { id },
     data: { fechaLeyendaConformidad: fecha },
+  });
+
+  // Si el acta ya fue cerrada, los PDFs firmados deben regenerarse con la
+  // nueva fecha para que la leyenda coincida con el documento final.
+  if (actual.status === "CLOSED") {
+    try {
+      await generarYGuardarDocumentosFirmados(id);
+    } catch (error) {
+      console.error(`[actualizarFechaLeyendaConformidad] Error regenerando PDFs para ${id}:`, error);
+      throw new ReglaDeNegocioError(
+        "Se actualizó la fecha, pero no se pudieron regenerar los documentos firmados. Intente nuevamente.",
+        500,
+      );
+    }
+  }
+
+  const sesion = await db.signingSession.findUnique({
+    where: { id },
     include: {
       _count: { select: { signers: true } },
       createdBy: { select: { nombre: true } },
@@ -367,6 +379,7 @@ export async function actualizarFechaLeyendaConformidad(
       documents: { orderBy: { orden: "asc" } },
     },
   });
+  if (!sesion) throw new ReglaDeNegocioError("La sesión no existe.", 404);
 
   return {
     ...toResumenDto(sesion),
