@@ -59,11 +59,12 @@ model SigningSession {
   code           String        @unique
   /// Token aleatorio impredecible para la URL del QR (32 bytes hex)
   token          String        @unique
-  asunto         String
-  expediente     String
-  fechaAudiencia DateTime
-  sede           String
-  modalidad      Modalidad     @default(PRESENCIAL)
+  asunto                   String
+  expediente               String
+  fechaAudiencia           DateTime
+  fechaLeyendaConformidad  DateTime?   @map("fecha_leyenda_conformidad")
+  sede                     String
+  modalidad                Modalidad   @default(PRESENCIAL)
   status SessionStatus @default(OPEN)
 
   createdById String

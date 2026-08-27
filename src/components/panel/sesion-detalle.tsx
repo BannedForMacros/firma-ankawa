@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, MapPin, PenLine, Users, XOctagon } from "lucide-react";
+import { ArrowLeft, CalendarDays, MapPin, PenLine, Pencil, Users, XOctagon } from "lucide-react";
 
 import type { ModalidadAudiencia, SesionDetalleDto } from "@/lib/types";
 import { fechaCorta, fechaHoraLegal } from "@/lib/dates";
@@ -41,6 +41,11 @@ export function SesionDetalle({ inicial, qrUrl }: SesionDetalleProps) {
     sesionBase.status === "OPEN"
   );
 
+  const [editandoFechaLeyenda, setEditandoFechaLeyenda] = useState(false);
+  const [fechaLeyendaEditada, setFechaLeyendaEditada] = useState("");
+  const [guardandoFechaLeyenda, setGuardandoFechaLeyenda] = useState(false);
+  const [errorFechaLeyenda, setErrorFechaLeyenda] = useState<string | null>(null);
+
   useEffect(() => {
     if (enVivo) setSesionBase(enVivo);
   }, [enVivo]);
@@ -74,7 +79,81 @@ export function SesionDetalle({ inicial, qrUrl }: SesionDetalleProps) {
     return Number.isNaN(fecha.getTime()) ? sesion.closedAt : fechaHoraLegal(fecha);
   }, [sesion.closedAt]);
 
+  const fechaLeyendaConformidadLegible = useMemo(() => {
+    const fechaIso = sesion.fechaLeyendaConformidad ?? sesion.fechaAudiencia;
+    const fecha = new Date(fechaIso);
+    return Number.isNaN(fecha.getTime()) ? fechaIso : fechaCorta(fecha);
+  }, [sesion.fechaLeyendaConformidad, sesion.fechaAudiencia]);
+
   const totalFirmas = sesion.firmas.length;
+
+  const iniciarEdicionFechaLeyenda = (): void => {
+    const base = sesion.fechaLeyendaConformidad ?? sesion.fechaAudiencia;
+    const fecha = new Date(base);
+    if (Number.isNaN(fecha.getTime())) {
+      setFechaLeyendaEditada(base.slice(0, 10));
+    } else {
+      const parts = new Intl.DateTimeFormat("es-PE", {
+        timeZone: "America/Lima",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(fecha);
+      const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+      setFechaLeyendaEditada(`${get("year")}-${get("month")}-${get("day")}`);
+    }
+    setErrorFechaLeyenda(null);
+    setEditandoFechaLeyenda(true);
+  };
+
+  const cancelarEdicionFechaLeyenda = (): void => {
+    setEditandoFechaLeyenda(false);
+    setFechaLeyendaEditada("");
+    setErrorFechaLeyenda(null);
+  };
+
+  const guardarFechaLeyenda = async (): Promise<void> => {
+    if (!fechaLeyendaEditada) {
+      setErrorFechaLeyenda("Seleccione una fecha.");
+      return;
+    }
+    setGuardandoFechaLeyenda(true);
+    setErrorFechaLeyenda(null);
+    try {
+      const fecha = new Date(`${fechaLeyendaEditada}T12:00:00`);
+      const respuesta = await fetch(`/api/sesiones/${sesion.id}/fecha-leyenda`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fechaLeyendaConformidad: fecha.toISOString() }),
+      });
+      const cuerpo: unknown = await respuesta.json().catch(() => null);
+      if (!respuesta.ok) {
+        const mensaje =
+          typeof cuerpo === "object" &&
+          cuerpo !== null &&
+          "error" in cuerpo &&
+          typeof (cuerpo as { error: unknown }).error === "string"
+            ? (cuerpo as { error: string }).error
+            : "No se pudo actualizar la fecha. Intente nuevamente.";
+        setErrorFechaLeyenda(mensaje);
+        return;
+      }
+      if (
+        typeof cuerpo === "object" &&
+        cuerpo !== null &&
+        "sesion" in cuerpo &&
+        typeof (cuerpo as { sesion: unknown }).sesion === "object" &&
+        (cuerpo as { sesion: SesionDetalleDto | null }).sesion !== null
+      ) {
+        setSesionBase((cuerpo as { sesion: SesionDetalleDto }).sesion);
+      }
+      setEditandoFechaLeyenda(false);
+    } catch {
+      setErrorFechaLeyenda("No se pudo conectar con el servidor. Verifique su conexión.");
+    } finally {
+      setGuardandoFechaLeyenda(false);
+    }
+  };
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8">
@@ -127,6 +206,57 @@ export function SesionDetalle({ inicial, qrUrl }: SesionDetalleProps) {
                   <dt className="sr-only">Fecha de la audiencia</dt>
                   <dd>{fechaAudienciaLegible}</dd>
                 </div>
+                <div className="flex w-full items-start gap-2 sm:w-auto">
+                  <CalendarDays aria-hidden="true" className="mt-0.5 h-4 w-4 text-ciruela-400" strokeWidth={1.5} />
+                  <dt className="sr-only">Fecha del acta de conformidad</dt>
+                  <dd className="flex flex-wrap items-center gap-2">
+                    {editandoFechaLeyenda ? (
+                      <>
+                        <input
+                          type="date"
+                          value={fechaLeyendaEditada}
+                          onChange={(e) => setFechaLeyendaEditada(e.target.value)}
+                          disabled={guardandoFechaLeyenda}
+                          className="rounded-md border border-humo-300 px-2 py-1 text-sm text-berenjena focus:border-guinda-500 focus:outline-none focus:ring-1 focus:ring-guinda-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void guardarFechaLeyenda()}
+                          disabled={guardandoFechaLeyenda}
+                          className="text-xs font-medium text-guinda-600 hover:text-guinda-700 disabled:opacity-50"
+                        >
+                          Guardar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelarEdicionFechaLeyenda}
+                          disabled={guardandoFechaLeyenda}
+                          className="text-xs font-medium text-ciruela-400 hover:text-ciruela-600 disabled:opacity-50"
+                        >
+                          Cancelar
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <span>Acta de conformidad: {fechaLeyendaConformidadLegible}</span>
+                        {abierta ? (
+                          <button
+                            type="button"
+                            onClick={iniciarEdicionFechaLeyenda}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-guinda-600 hover:text-guinda-700"
+                            aria-label="Editar fecha del acta de conformidad"
+                          >
+                            <Pencil className="h-3 w-3" strokeWidth={1.5} />
+                            Editar
+                          </button>
+                        ) : null}
+                      </>
+                    )}
+                  </dd>
+                </div>
+                {errorFechaLeyenda ? (
+                  <div className="w-full text-xs text-guinda-600">{errorFechaLeyenda}</div>
+                ) : null}
                 <div className="flex items-center gap-2">
                   <MapPin aria-hidden="true" className="h-4 w-4 text-ciruela-400" strokeWidth={1.5} />
                   <dt className="sr-only">Sede</dt>

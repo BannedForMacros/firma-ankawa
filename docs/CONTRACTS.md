@@ -47,6 +47,7 @@ archivos del núcleo (`src/lib/*`, `src/server/*`, `src/auth.ts`, `prisma/*`,
 - `@/auth` → `auth()`, `signIn`, `signOut`, `requireUser()`, `requireAdmin()`.
 - `@/lib/types` → DTOs: `SesionResumenDto`, `SesionDetalleDto`,
   `FirmaResumenDto`, `SesionPublicaDto`, `IdentidadDto`, `RolUsuario`, etc.
+  `SesionResumenDto` incluye `fechaLeyendaConformidad: string | null`.
 - `@/lib/validation` → `loginSchema`, `crearSesionSchema`,
   `consultaIdentidadSchema`, `guardarFirmaSchema`, `crearUsuarioSchema`,
   `dniSchema`, `rucSchema`.
@@ -148,6 +149,9 @@ En cada handler público: `rateLimit` por IP + `cleanupExpiredBuckets()`.
   (la usa el polling de 4 s del panel).
 - `POST /api/sesiones/[id]/cerrar` (requireUser) → `{ok: true}`;
   `ReglaDeNegocioError` → su status.
+- `PATCH /api/sesiones/[id]/fecha-leyenda` (requireUser) Body `{fechaLeyendaConformidad: ISO}`
+  → `{sesion: SesionDetalleDto}`; actualiza la fecha que aparece en la leyenda
+  "Firmado en señal de conformidad…".
 - `GET /api/firmas/[...path]` (requireUser) → PNG binario vía
   `leerImagenFirma(path.join("/"))`, `Content-Type: image/png`,
   `Cache-Control: private, no-store`. 404 si no existe.
@@ -172,7 +176,7 @@ cada 4000 ms mientras `activo` (sesión OPEN y pestaña visible), devuelve
 `@react-pdf/renderer`, A4 vertical, márgenes 56pt. Encabezado: logo
 (`public/brand/logo.png` leído con `fs` y pasado como data URI) +
 "Centro de Arbitraje y Resolución de Disputas CARD - ANKAWA INTL" +
-asunto y expediente. Línea: `leyendaConformidad(fechaAudiencia)`.
+asunto y expediente. Línea: `leyendaConformidad(fechaLeyendaConformidad ?? fechaAudiencia)`.
 Tabla 2 columnas con bordes negros 1pt colapsados: cada celda alto fijo
 (~150pt): zona superior con la firma centrada (PNG transparente desde
 storage vía `leerImagenFirma`, altura máx. uniforme ~70pt, objectFit

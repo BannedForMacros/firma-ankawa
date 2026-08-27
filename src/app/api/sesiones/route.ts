@@ -53,6 +53,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     asunto: getString("asunto"),
     expediente: getString("expediente"),
     fechaAudiencia: getString("fechaAudiencia"),
+    fechaLeyendaConformidad: getString("fechaLeyendaConformidad") || undefined,
     modalidad: getString("modalidad"),
   });
   if (!parsed.success) {

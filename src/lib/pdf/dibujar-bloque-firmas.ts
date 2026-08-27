@@ -71,6 +71,7 @@ export async function dibujarBloqueFirmas(
   blockWidth: number,
   blockHeight: number,
   firmas: Signer[],
+  fechaLeyenda: Date,
 ): Promise<void> {
   const firmasConImagen: FirmaConImagen[] = await Promise.all(
     firmas.map(async (firma) => ({
@@ -90,7 +91,7 @@ export async function dibujarBloqueFirmas(
   let cursorY = startY + blockHeight - 8;
 
   // Leyenda superior
-  const leyenda = leyendaConformidad(new Date());
+  const leyenda = leyendaConformidad(fechaLeyenda);
   const leyendaSize = ajustarTamanoTexto(leyenda, helvetica, 9, blockWidth);
   page.drawText(leyenda, {
     x: startX,

@@ -15,6 +15,7 @@ export interface SesionResumenDto {
   asunto: string;
   expediente: string;
   fechaAudiencia: string; // ISO
+  fechaLeyendaConformidad: string | null; // ISO
   sede: string;
   modalidad: ModalidadAudiencia;
   status: EstadoSesion;

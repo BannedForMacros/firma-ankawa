@@ -152,9 +152,10 @@ function CeldaVacia() {
 interface PlanillaDocProps {
   code: string;
   firmasConImagen: FirmaConImagen[];
+  fechaLeyenda: Date;
 }
 
-function PlanillaDocumento({ code, firmasConImagen }: PlanillaDocProps) {
+function PlanillaDocumento({ code, firmasConImagen, fechaLeyenda }: PlanillaDocProps) {
   const filas = agruparEnFilas(firmasConImagen);
 
   return (
@@ -165,7 +166,7 @@ function PlanillaDocumento({ code, firmasConImagen }: PlanillaDocProps) {
     >
       <Page size="A4" style={estilos.pagina}>
         <Text style={estilos.leyendaSuperior}>
-          {leyendaConformidad(new Date())}
+          {leyendaConformidad(fechaLeyenda)}
         </Text>
 
         {firmasConImagen.length === 0 ? (
@@ -215,6 +216,8 @@ export async function generarPlanillaPdf(
     throw new ReglaDeNegocioError("La sesión no existe.", 404);
   }
 
+  const fechaLeyenda = sesion.fechaLeyendaConformidad ?? sesion.fechaAudiencia;
+
   const firmasConImagen: FirmaConImagen[] = await Promise.all(
     sesion.signers.map(async (firma) => ({
       firma,
@@ -226,6 +229,7 @@ export async function generarPlanillaPdf(
     <PlanillaDocumento
       code={sesion.code}
       firmasConImagen={firmasConImagen}
+      fechaLeyenda={fechaLeyenda}
     />,
   );
 
@@ -265,6 +269,7 @@ export async function generarPlanillaPdf(
         blockWidth,
         blockHeight,
         sesion.signers,
+        fechaLeyenda,
       );
 
       const mergedBytes = await pdfDoc.save();

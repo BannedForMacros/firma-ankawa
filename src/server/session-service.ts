@@ -69,6 +69,7 @@ function toResumenDto(
     asunto: sesion.asunto,
     expediente: sesion.expediente,
     fechaAudiencia: sesion.fechaAudiencia.toISOString(),
+    fechaLeyendaConformidad: sesion.fechaLeyendaConformidad?.toISOString() ?? null,
     sede: sesion.sede,
     modalidad: sesion.modalidad,
     status: sesion.status,
@@ -86,6 +87,7 @@ export async function crearSesion(
     data: {
       ...input,
       sede: "",
+      fechaLeyendaConformidad: input.fechaLeyendaConformidad ?? input.fechaAudiencia,
       code: generateShortCode(),
       token: generateSessionToken(),
       createdById: actor.id,
@@ -336,6 +338,45 @@ export async function eliminarDocumentoSesion(
   await eliminarDocumentoStorage(doc.originalPath);
   await eliminarDocumentoStorage(doc.signedPath);
   await db.sessionDocument.delete({ where: { id: docId } });
+}
+
+export async function actualizarFechaLeyendaConformidad(
+  id: string,
+  fecha: Date,
+): Promise<SesionDetalleDto> {
+  const actual = await db.signingSession.findUnique({
+    where: { id },
+    select: { status: true },
+  });
+  if (!actual) throw new ReglaDeNegocioError("La sesión no existe.", 404);
+  if (actual.status === "CLOSED") {
+    throw new ReglaDeNegocioError(
+      "No se puede editar la fecha de una sesión cerrada. Reabra la sesión o genere una nueva.",
+      409,
+    );
+  }
+
+  const sesion = await db.signingSession.update({
+    where: { id },
+    data: { fechaLeyendaConformidad: fecha },
+    include: {
+      _count: { select: { signers: true } },
+      createdBy: { select: { nombre: true } },
+      closedBy: { select: { nombre: true } },
+      signers: { orderBy: { signedAt: "asc" } },
+      documents: { orderBy: { orden: "asc" } },
+    },
+  });
+
+  return {
+    ...toResumenDto(sesion),
+    token: sesion.token,
+    closedAt: sesion.closedAt?.toISOString() ?? null,
+    closedByNombre: sesion.closedBy?.nombre ?? null,
+    createdByNombre: sesion.createdBy.nombre,
+    documentos: sesion.documents.map(toDocumentoDto),
+    firmas: sesion.signers.map(toFirmaDto),
+  };
 }
 
 /**

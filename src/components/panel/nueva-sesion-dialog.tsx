@@ -22,13 +22,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { crearSesionSchema } from "@/lib/validation";
 import type { ModalidadAudiencia, SesionResumenDto } from "@/lib/types";
 
-type Campo = "asunto" | "expediente" | "fechaAudiencia" | "modalidad" | "documento";
+type Campo = "asunto" | "expediente" | "fechaAudiencia" | "fechaLeyendaConformidad" | "modalidad" | "documento";
 type ErroresCampos = Partial<Record<Campo, string>>;
 
 const CAMPOS: ReadonlyArray<Campo> = [
   "asunto",
   "expediente",
   "fechaAudiencia",
+  "fechaLeyendaConformidad",
   "modalidad",
   "documento",
 ];
@@ -51,6 +52,7 @@ export function NuevaSesionDialog({ triggerVariant = "primary" }: NuevaSesionDia
   const [asunto, setAsunto] = React.useState("");
   const [expediente, setExpediente] = React.useState("");
   const [fechaAudiencia, setFechaAudiencia] = React.useState("");
+  const [fechaLeyendaConformidad, setFechaLeyendaConformidad] = React.useState("");
   const [modalidad, setModalidad] = React.useState<ModalidadAudiencia>("PRESENCIAL");
   const [documentos, setDocumentos] = React.useState<File[]>([]);
   const [errores, setErrores] = React.useState<ErroresCampos>({});
@@ -61,6 +63,7 @@ export function NuevaSesionDialog({ triggerVariant = "primary" }: NuevaSesionDia
     setAsunto("");
     setExpediente("");
     setFechaAudiencia("");
+    setFechaLeyendaConformidad("");
     setModalidad("PRESENCIAL");
     setDocumentos([]);
     setErrores({});
@@ -103,6 +106,9 @@ export function NuevaSesionDialog({ triggerVariant = "primary" }: NuevaSesionDia
       asunto,
       expediente,
       fechaAudiencia,
+      fechaLeyendaConformidad: fechaLeyendaConformidad
+        ? new Date(`${fechaLeyendaConformidad}T12:00:00`)
+        : undefined,
       modalidad,
     });
 
@@ -152,6 +158,9 @@ export function NuevaSesionDialog({ triggerVariant = "primary" }: NuevaSesionDia
       formData.append("asunto", parsed.data.asunto);
       formData.append("expediente", parsed.data.expediente);
       formData.append("fechaAudiencia", parsed.data.fechaAudiencia.toISOString());
+      if (parsed.data.fechaLeyendaConformidad) {
+        formData.append("fechaLeyendaConformidad", parsed.data.fechaLeyendaConformidad.toISOString());
+      }
       formData.append("modalidad", parsed.data.modalidad);
       for (const documento of documentos) {
         formData.append("documentos", documento);
@@ -293,6 +302,28 @@ export function NuevaSesionDialog({ triggerVariant = "primary" }: NuevaSesionDia
                 </p>
               ) : null}
             </div>
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="ns-fecha-leyenda">Fecha del acta de conformidad</Label>
+            <Input
+              id="ns-fecha-leyenda"
+              type="date"
+              value={fechaLeyendaConformidad}
+              onChange={(e) => setFechaLeyendaConformidad(e.target.value)}
+              aria-invalid={errores.fechaLeyendaConformidad ? true : undefined}
+              aria-describedby={errores.fechaLeyendaConformidad ? "ns-fecha-leyenda-error" : "ns-fecha-leyenda-ayuda"}
+              disabled={enviando}
+            />
+            <p id="ns-fecha-leyenda-ayuda" className="text-xs text-ciruela-400">
+              Fecha que aparecerá en la frase &quot;Firmado en señal de conformidad…&quot;. Si no la
+              indica, se usará la fecha de la audiencia.
+            </p>
+            {errores.fechaLeyendaConformidad ? (
+              <p id="ns-fecha-leyenda-error" className="text-xs text-guinda-600">
+                {errores.fechaLeyendaConformidad}
+              </p>
+            ) : null}
           </div>
 
           <div className="grid gap-1.5">
