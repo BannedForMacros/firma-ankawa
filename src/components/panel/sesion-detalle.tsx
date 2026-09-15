@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CalendarDays, MapPin, PenLine, Pencil, Users, XOctagon } from "lucide-react";
 
-import type { ModalidadAudiencia, SesionDetalleDto } from "@/lib/types";
+import type { FirmaResumenDto, ModalidadAudiencia, SesionDetalleDto } from "@/lib/types";
 import { fechaCorta, fechaHoraLegal } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -15,6 +15,7 @@ import { SectionTitle } from "@/components/brand/section-title";
 import { SessionStatusPill } from "@/components/brand/session-status-pill";
 import { SignerCard } from "@/components/panel/signer-card";
 import { CerrarSesionDialog } from "@/components/panel/cerrar-sesion-dialog";
+import { EliminarFirmaDialog } from "@/components/panel/eliminar-firma-dialog";
 import { useSesionEnVivo } from "@/components/panel/use-sesion-en-vivo";
 import { GestionDocumentos } from "@/components/panel/gestion-documentos";
 
@@ -33,6 +34,7 @@ const MODALIDAD_LEGIBLE: Record<ModalidadAudiencia, string> = {
 export function SesionDetalle({ inicial, qrUrl }: SesionDetalleProps) {
   const [dialogoCierreAbierto, setDialogoCierreAbierto] = useState(false);
   const [resaltadaId, setResaltadaId] = useState<string | null>(null);
+  const [firmaAEliminar, setFirmaAEliminar] = useState<FirmaResumenDto | null>(null);
 
   // El dato en vivo manda; mientras el hook carga se usa el snapshot del servidor.
   const [sesionBase, setSesionBase] = useState(inicial);
@@ -380,6 +382,7 @@ export function SesionDetalle({ inicial, qrUrl }: SesionDetalleProps) {
                     firma={firma}
                     orden={indice + 1}
                     resaltada={firma.id === resaltadaId}
+                    onEliminar={() => setFirmaAEliminar(firma)}
                   />
                 ))}
               </ol>
@@ -394,6 +397,16 @@ export function SesionDetalle({ inicial, qrUrl }: SesionDetalleProps) {
         open={dialogoCierreAbierto}
         onOpenChange={setDialogoCierreAbierto}
         onCerrada={refetch}
+      />
+
+      <EliminarFirmaDialog
+        sesionId={sesion.id}
+        firma={firmaAEliminar}
+        sesionCerrada={!abierta}
+        onOpenChange={(open) => {
+          if (!open) setFirmaAEliminar(null);
+        }}
+        onEliminada={() => refetch()}
       />
     </div>
   );

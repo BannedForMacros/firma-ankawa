@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { Trash2 } from "lucide-react";
 
 import type { FirmaResumenDto } from "@/lib/types";
 import { VerifiedBadge } from "@/components/brand/verified-badge";
@@ -12,6 +13,8 @@ interface SignerCardProps {
   orden: number;
   /** Resalta la tarjeta brevemente cuando la firma acaba de llegar. */
   resaltada?: boolean;
+  /** Si se indica, muestra el botón para eliminar la firma. */
+  onEliminar?: () => void;
   className?: string;
 }
 
@@ -24,7 +27,13 @@ const formatoHora = new Intl.DateTimeFormat("es-PE", {
 });
 
 /** Fila de la lista en vivo: miniatura de la firma y datos del firmante. */
-export function SignerCard({ firma, orden, resaltada = false, className }: SignerCardProps) {
+export function SignerCard({
+  firma,
+  orden,
+  resaltada = false,
+  onEliminar,
+  className,
+}: SignerCardProps) {
   const hora = useMemo(() => {
     const fecha = new Date(firma.signedAt);
     return Number.isNaN(fecha.getTime()) ? "—" : formatoHora.format(fecha);
@@ -75,6 +84,18 @@ export function SignerCard({ firma, orden, resaltada = false, className }: Signe
           {hora}
         </time>
       </div>
+
+      {onEliminar ? (
+        <button
+          type="button"
+          onClick={onEliminar}
+          aria-label={`Eliminar firma de ${firma.displayName}`}
+          title="Eliminar firma"
+          className="shrink-0 rounded-[calc(var(--radius-brand)-0.25rem)] p-2 text-ciruela-300 outline-none transition-colors hover:bg-guinda-50 hover:text-guinda-600 focus-visible:ring-2 focus-visible:ring-guinda-500"
+        >
+          <Trash2 aria-hidden="true" className="h-4 w-4" strokeWidth={1.5} />
+        </button>
+      ) : null}
     </li>
   );
 }

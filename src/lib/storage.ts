@@ -58,6 +58,20 @@ export async function leerImagenFirma(relativePath: string): Promise<Buffer> {
   return readFile(resolved);
 }
 
+/** Elimina una imagen de firma. No lanza si el archivo no existe. */
+export async function eliminarImagenFirma(relativePath: string): Promise<void> {
+  const resolved = path.resolve(SIGNATURES_ROOT, relativePath);
+  if (!resolved.startsWith(SIGNATURES_ROOT + path.sep)) {
+    throw new Error("Ruta de firma inválida.");
+  }
+  try {
+    await unlink(resolved);
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException)?.code;
+    if (code !== "ENOENT") throw error;
+  }
+}
+
 /** Resuelve y valida una ruta relativa dentro del almacén de documentos. */
 function resolverRutaDocumento(relativePath: string): string {
   const resolved = path.resolve(DOCUMENTS_ROOT, relativePath);

@@ -153,6 +153,10 @@ En cada handler público: `rateLimit` por IP + `cleanupExpiredBuckets()`.
   → `{sesion: SesionDetalleDto}`; actualiza la fecha que aparece en la leyenda
   "Firmado en señal de conformidad…". Si la sesión está cerrada, regenera
   automáticamente los documentos firmados.
+- `DELETE /api/sesiones/[id]/firmas/[firmaId]` (requireUser) → `{sesion: SesionDetalleDto}`;
+  elimina una firma indebida (registro + PNG) para que no salga en el PDF.
+  Válido con la sesión abierta o cerrada; si está cerrada, regenera los
+  documentos firmados. Audita `SIGNATURE_DELETED` con los datos del firmante.
 - `GET /api/firmas/[...path]` (requireUser) → PNG binario vía
   `leerImagenFirma(path.join("/"))`, `Content-Type: image/png`,
   `Cache-Control: private, no-store`. 404 si no existe.

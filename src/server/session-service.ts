@@ -5,6 +5,7 @@ import { registrarAuditoria } from "@/lib/audit";
 import {
   guardarDocumentoOriginal,
   eliminarDocumentoSesion as eliminarDocumentoStorage,
+  eliminarImagenFirma,
 } from "@/lib/storage";
 import { generarYGuardarDocumentosFirmados } from "@/server/documento-final-service";
 import type { CrearSesionInput } from "@/lib/validation";
@@ -338,6 +339,71 @@ export async function eliminarDocumentoSesion(
   await eliminarDocumentoStorage(doc.originalPath);
   await eliminarDocumentoStorage(doc.signedPath);
   await db.sessionDocument.delete({ where: { id: docId } });
+}
+
+/**
+ * Elimina una firma de la sesión (p. ej. firmas malintencionadas o de
+ * personas ajenas a la audiencia) para que no aparezca en el PDF.
+ *
+ * Funciona con la sesión abierta o cerrada. Si está cerrada, se regeneran
+ * los documentos firmados. Los datos del firmante quedan en la auditoría
+ * (SIGNATURE_DELETED) como evidencia de quién eliminó qué.
+ */
+export async function eliminarFirmaSesion(
+  sessionId: string,
+  firmaId: string,
+  actor: { id: string; ip: string; userAgent: string },
+): Promise<void> {
+  const { firma, status } = await db.$transaction(async (tx) => {
+    // Mismo lock que guardarFirma()/cerrarSesion() para serializar con ellos.
+    const filas = await tx.$queryRaw<Array<{ id: string; status: string }>>`
+      SELECT id, status FROM signing_sessions WHERE id = ${sessionId} FOR UPDATE
+    `;
+    const sesion = filas[0];
+    if (!sesion) throw new ReglaDeNegocioError("La sesión no existe.", 404);
+
+    const encontrada = await tx.signer.findFirst({ where: { id: firmaId, sessionId } });
+    if (!encontrada) throw new ReglaDeNegocioError("La firma no existe.", 404);
+
+    await tx.signer.delete({ where: { id: firmaId } });
+    return { firma: encontrada, status: sesion.status };
+  });
+
+  await eliminarImagenFirma(firma.imagePath).catch((error: unknown) => {
+    console.error(`[eliminarFirmaSesion] No se pudo borrar la imagen ${firma.imagePath}:`, error);
+  });
+
+  await registrarAuditoria({
+    actorType: "USER",
+    userId: actor.id,
+    action: "SIGNATURE_DELETED",
+    entityType: "Signer",
+    entityId: firma.id,
+    ip: actor.ip,
+    userAgent: actor.userAgent,
+    metadata: {
+      sessionId,
+      docType: firma.docType,
+      docNumber: firma.docNumber,
+      displayName: firma.displayName,
+      cargo: firma.cargo,
+      signedAt: firma.signedAt.toISOString(),
+      sha256: firma.imageSha256,
+      sessionStatus: status,
+    },
+  });
+
+  if (status === "CLOSED") {
+    try {
+      await generarYGuardarDocumentosFirmados(sessionId);
+    } catch (error) {
+      console.error(`[eliminarFirmaSesion] Error regenerando PDFs para ${sessionId}:`, error);
+      throw new ReglaDeNegocioError(
+        "Se eliminó la firma, pero no se pudieron regenerar los documentos firmados. Intente nuevamente.",
+        500,
+      );
+    }
+  }
 }
 
 export async function actualizarFechaLeyendaConformidad(
