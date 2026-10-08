@@ -13,6 +13,7 @@ interface FacetaProps {
   //esto es una prueba
   //esto es una prueba2
     //esto es una prueba3
+        //esto es una prueba4
 }
 
 /** Faceta triangular que vuela a su posición y luego flota. */
