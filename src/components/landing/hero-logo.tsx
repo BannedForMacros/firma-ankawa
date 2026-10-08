@@ -12,6 +12,7 @@ interface FacetaProps {
   opacidad?: number;
   //esto es una prueba
   //esto es una prueba2
+    //esto es una prueba3
 }
 
 /** Faceta triangular que vuela a su posición y luego flota. */
